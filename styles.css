@@ -1,0 +1,3546 @@
+/* ===== RESET & BASE ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary: #9c5f2b;
+    --primary-light: #cf9340;
+    /* --primary sirve para texto sobre blanco y para botones con texto
+       blanco. Sobre arena (#f1e4cd) baja a 4,09:1 y no llega al 4,5 que
+       pide WCAG, asi que para texto sobre fondo claro esta este tono
+       oscurecido del mismo color. */
+    --primary-ink: #7a4f14;
+    --secondary: #8b5a2b;
+    --accent: #e0b054;
+    --bg: #f7efe0;
+    --bg-subtle: #f1e4cd;
+    --card-bg: #fffdf9;
+    --text: #3b2f22;
+    --text-light: #6b5b46;
+    --border: #ddcbaa;
+    --success: #7b8a3d;
+    --warning: #cf8413;
+    --danger: #b23c1b;
+    --info: #8a6a2f;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-hover: 0 4px 16px rgba(0,0,0,0.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+/* ===== APP CONTAINER ===== */
+.app {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ===== HEADER ===== */
+/* El header es hijo directo de <body>, no de un contenedor con padding, así
+   que no necesita márgenes negativos. Los tenía (-20px a cada lado) y eso lo
+   hacía 40 px más ancho que la ventana, con la consiguiente barra de
+   desplazamiento horizontal entre 1400 y 1440 px de ancho. Los 20 px de los
+   lados los dan los paddings de abajo; el contenido centrado lo limita
+   .header-inner a 1400 px. */
+.header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: white;
+    padding: 30px 20px;
+    margin: 0 0 20px;
+}
+
+.header-content {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.logo-icon {
+    font-size: 2.5rem;
+}
+
+.logo h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.tagline {
+    opacity: 0.9;
+    font-size: 1rem;
+    font-weight: 300;
+}
+
+/* ===== NAVIGATION ===== */
+.nav {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    background: var(--card-bg);
+    padding: 8px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.nav-btn {
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-light);
+    transition: all 0.2s ease;
+}
+
+.nav-btn:hover {
+    background: var(--bg);
+    color: var(--text);
+}
+
+.nav-btn.active {
+    background: var(--primary);
+    color: white;
+}
+
+/* ===== SECTIONS ===== */
+.section {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.section.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.section-header {
+    margin-bottom: 24px;
+}
+
+.section-header h2 {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+
+.section-desc {
+    color: var(--text-light);
+    font-size: 1rem;
+}
+
+/* ===== CARDS ===== */
+.card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-hover);
+}
+
+.card h2 {
+    font-size: 1.25rem;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    color: var(--primary);
+}
+
+/* ===== DASHBOARD GRID =====
+   El mapa y la tarjeta de suelo y clima van uno al lado del otro: el mapa
+   toma 2 fracciones y la ficha de valores 1. Debajo, en fila completa, van
+   las tarjetas de especies (3 columnas) y el resumen. */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    /* stretch, no start: así la tarjeta del mapa se estira hasta la altura
+       que marca la ficha de suelo y clima, que es la más alta de las dos. */
+    align-items: stretch;
+}
+
+.dashboard-grid .map-card {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.dashboard-grid .terrain-card {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: stretch;
+}
+
+.dashboard-grid .mushroom-cards-grid {
+    grid-column: 1 / -1;
+    grid-row: 2;
+}
+
+.dashboard-top-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+
+.dashboard-map-card {
+    grid-column: auto;
+}
+
+/* El mapa tiene la misma altura que la ficha de suelo y clima, que es la
+   que manda en la fila. Para poderarlo se necesita que la tarjeta sea una
+   columna flexible: el mapa ocupa el hueco que dejan el buscador y el botón
+   de guardar. height:auto es lo que permite que crezca; el min-height evita
+   que en una ventana muy baja el mapa quede ilegible. */
+.dashboard-grid .map-card {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#dashboardMap {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 420px;
+    border-radius: var(--radius-sm);
+    z-index: 1;
+}
+
+.dashboard-map-info {
+    padding: 12px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+}
+
+.dashboard-map-info .placeholder-text {
+    color: var(--text-light);
+    font-style: italic;
+}
+
+/* ===== STATUS CARD ===== */
+.status-card {
+    grid-column: 1 / -1;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+}
+
+.status-icon {
+    font-size: 2.5rem;
+}
+
+.status-text {
+    flex: 1;
+}
+
+.status-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.location-info {
+    margin-top: 12px;
+    padding: 12px;
+    background: #f6ecd7;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+}
+
+.location-info strong {
+    color: var(--primary);
+}
+
+.last-update {
+    margin-top: 12px;
+    font-size: 0.85rem;
+    color: var(--text-light);
+    text-align: right;
+}
+
+/* ===== MUSHROOM CARDS ===== */
+.mushroom-card {
+    text-align: center;
+}
+
+.mushroom-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.mushroom-icon {
+    font-size: 2rem;
+}
+
+.mushroom-header h2 {
+    margin-bottom: 0;
+    font-size: 1.2rem;
+}
+
+/* Probability Ring */
+.probability-ring {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 20px;
+}
+
+.probability-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.ring-bg {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 8;
+}
+
+.ring-fill {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dasharray 1s ease;
+}
+
+.boletus-card .ring-fill {
+    stroke: var(--secondary);
+}
+
+.niscalos-card .ring-fill {
+    stroke: #e65100;
+}
+
+.ring-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.ring-text .percentage {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.ring-text .label {
+    font-size: 0.8rem;
+    color: var(--text-light);
+}
+
+/* Conditions List */
+.conditions-list {
+    text-align: left;
+}
+
+.condition-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+}
+
+.condition-item:last-child {
+    border-bottom: none;
+}
+
+.condition-status {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.condition-status.ok {
+    background: #f6ecd7;
+    color: var(--success);
+}
+
+.condition-status.warning {
+    background: #fff3e0;
+    color: var(--warning);
+}
+
+.condition-status.danger {
+    background: #ffebee;
+    color: var(--danger);
+}
+
+/* ===== SUMMARY CARD ===== */
+.summary-card {
+    grid-column: 1 / -1;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.summary-item {
+    text-align: center;
+    padding: 16px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+}
+
+.summary-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.summary-label {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin-top: 4px;
+}
+
+/* ===== MAP SECTION ===== */
+.map-wrapper {
+    position: relative;
+}
+
+/* Segundo bloque de #dashboardMap. La altura ya no se fija aquí: la fija el
+   flex de más arriba, para que el mapa accompanye a la ficha de suelo. */
+#dashboardMap {
+    border-radius: var(--radius-sm);
+    z-index: 1;
+}
+
+/* ===== SEARCH CONTAINER ===== */
+.search-container {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    max-width: 600px;
+}
+
+.search-container input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+}
+
+.search-container input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.btn-search {
+    padding: 12px 24px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-search:hover {
+    background: var(--primary-light);
+}
+
+/* ===== MUSHROOM SELECTOR ===== */
+.mushroom-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.mushroom-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mushroom-option:hover {
+    border-color: var(--primary);
+    background: #f6ecd7;
+}
+
+.mushroom-option.selected {
+    border-color: var(--primary);
+    background: #f6ecd7;
+}
+
+.mushroom-option input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.mushroom-option-icon {
+    font-size: 1.5rem;
+}
+
+.mushroom-option-info {
+    flex: 1;
+}
+
+.mushroom-option-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+}
+
+.mushroom-option-scientific {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    font-style: italic;
+}
+
+/* Las dos cartas de la pestaña Análisis se apilaban sin separación: el
+   contenedor no tenía regla propia y .card no lleva margen, así que quedaba
+   una pegada a la otra. Se le da la misma separación que usa el dashboard
+   (.dashboard-grid y .dashboard-top-row van a 20 px), para que el ritmo
+   vertical sea el mismo en las tres pantallas. */
+#mushroomAnalysisContainer {
+    display: grid;
+    gap: 20px;
+}
+
+/* ===== MUSHROOM INFO GRID ===== */
+/* Tres columnas fijas, igual que las tarjetas del dashboard. Antes era
+   auto-fill con un mínimo de 300 px, que a 1441 px de ancho daba cuatro
+   columnas y rompía el paralelismo con el dashboard. Los saltos van en los
+   mismos breakpoints que .mushroom-cards-grid: 2 columnas hasta 1024 y
+   una sola por debajo de 768. */
+.mushroom-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.mushroom-info-card {
+    padding: 16px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    border-left: 4px solid var(--primary);
+}
+
+.mushroom-info-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.mushroom-info-icon {
+    font-size: 2rem;
+}
+
+.mushroom-info-title {
+    flex: 1;
+}
+
+.mushroom-info-name {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.mushroom-info-scientific {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    font-style: italic;
+}
+
+.mushroom-info-details {
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+.mushroom-info-details p {
+    margin-bottom: 4px;
+}
+
+.mushroom-info-details strong {
+    color: var(--text);
+}
+
+/* ===== MUSHROOM CARDS GRID ===== */
+.mushroom-cards-grid {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+/* ===== DASHBOARD ACTIONS ===== */
+.dashboard-actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+}
+
+/* ===== TERRAIN CARD ===== */
+.terrain-card {
+    grid-column: span 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    /* La ficha de valores queda a la altura del mapa, no encogida */
+    height: 100%;
+}
+
+.terrain-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+/* ===== FICHA DE SUELO Y CLIMA =====
+   Lista de filas: icono a la izquierda, rotulo arriba y dato debajo, con
+   un filete entre filas. Se probaron dos cosas que no funcionan y se
+   descartaron:
+
+   - Cuadricula de dos columnas con cajas: ocupaba menos alto pero el
+     esquinaje era de ficha tecnica, y el texto largo (una textura) se
+     partia en dos lineas.
+   - Iconos dentro de un circulo con fondo: el circulo competia con los
+     anillos de color de las tarjetas de seta y anadia un borde mas que
+     delineaba la zona. El emoji se lee solo.
+
+   Lo que si mejora la lectura es aire: mas separacion entre filas y mas
+   altura de linea. Antes el rotulo iba pegado al dato y con interlineado
+   de 1.35, que a 0.8rem se leia como un bloque macizo. */
+
+.terrain-list {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Dos columnas: el icono ocupa la primera y salta las dos filas de texto,
+   para quedarse centrado al lado del rotulo y del dato. */
+.terrain-item {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr);
+    column-gap: 12px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.terrain-item:last-child {
+    border-bottom: none;
+}
+
+/* El icono, sin circulo ni fondo. Tamano de una letra grande para que se
+   lea de un vistazo pero sin robarle sitio al texto. */
+.terrain-item .ti {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    align-self: center;
+    font-size: 1.05rem;
+    line-height: 1;
+    text-align: left;
+    min-width: 0;
+}
+
+/* El rotulo: arriba, en negrita y mas grande que el dato. El salto de
+   linea de 1.45 y el margen inferior son los que separan las dos lineas
+   de texto; sin ellos se leen como una sola. */
+.terrain-item .tl {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text-light);
+    margin-bottom: 3px;
+    overflow-wrap: break-word;
+}
+
+/* El dato: debajo, en el color de marca y con mas cuerpo. */
+.terrain-item .tv {
+    grid-column: 2;
+    grid-row: 2;
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--primary-ink);
+    font-variant-numeric: tabular-nums;
+    /* Sin min-width:0 un nombre de pueblo o un valor largo ensancharia la
+       tarjeta entera. */
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+.status-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 2px solid var(--border);
+}
+
+.status-section h4 {
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+    color: var(--primary);
+}
+
+.status-section .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+}
+
+.status-section .status-icon {
+    font-size: 1.5rem;
+}
+
+.status-section .status-text {
+    flex: 1;
+}
+
+.status-section .status-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.status-section .last-update {
+    margin-top: 8px;
+    font-size: 0.75rem;
+    color: var(--text-light);
+    text-align: right;
+}
+
+.terrain-actions {
+    margin-top: auto;
+    padding-top: 16px;
+}
+
+.terrain-actions .btn-primary {
+    width: 100%;
+}
+
+.mushroom-cards-grid .mushroom-card {
+    text-align: center;
+}
+
+.mushroom-cards-grid .mushroom-title-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.mushroom-cards-grid .mushroom-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mushroom-cards-grid .mushroom-icon-large {
+    font-size: 3rem;
+    flex-shrink: 0;
+}
+
+.mushroom-cards-grid .mushroom-name {
+    display: block;
+    margin: 0;
+    font-size: 1.1rem;
+    line-height: 1.3;
+}
+
+.mushroom-cards-grid .mushroom-scientific {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-light);
+    font-style: italic;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.mushroom-cards-grid .prediction-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.mushroom-cards-grid .prediction-open {
+    background: #f6ecd7;
+    color: #7a4f14;
+    border: 1px solid #e0c58a;
+}
+
+.mushroom-cards-grid .prediction-approaching {
+    background: #fff3e0;
+    color: #ef6c00;
+    border: 1px solid #ffcc80;
+}
+
+.mushroom-cards-grid .prediction-closed {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+}
+
+.mushroom-cards-grid .prediction-icon {
+    font-size: 1.2rem;
+}
+
+.mushroom-cards-grid .prediction-text {
+    flex: 1;
+}
+
+.mushroom-cards-grid .mushroom-details {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    text-align: left;
+}
+
+.mushroom-cards-grid .mushroom-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 0.8rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.mushroom-cards-grid .mushroom-detail-item:last-child {
+    border-bottom: none;
+}
+
+.mushroom-cards-grid .mushroom-detail-label {
+    color: var(--text-light);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* ────────────────────────────────────────────────────────────
+   TEMPORADA DOCUMENTADA: etiqueta arriba, texto debajo
+   ────────────────────────────────────────────────────────────
+   Solo esta fila. Las demás siguen con etiqueta y valor en la misma línea,
+   que para valores cortos («1,00 · pH adecuado») queda mejor así.
+
+   La etiqueta lleva `white-space: nowrap` de base, y aquí el texto ya no
+   cabe a su lado, así que el contenedor pasa a bloque. El interlineado se
+   sube un poco porque el texto pasa a ser un párrafo de varias líneas y con
+   el ajuste normal se leía pegado a la etiqueta. */
+.mushroom-cards-grid .mushroom-detail-item.season {
+    display: block;
+    /* Línea separadora respecto a la fila anterior: it keeps the `border-bottom` of the whole
+       detail list, same as any other row. `margin-top` is what separates it
+       from the "Factor altitud" above, which is the row the user reads as
+       belonging to the previous block. */
+    margin-top: 2px;
+}
+
+.mushroom-cards-grid .mushroom-detail-item.season .mushroom-detail-label {
+    display: block;
+    margin-bottom: 3px;
+    line-height: 1.4;
+    /* Se declara de forma explícita en lugar de confiar en la herencia: la
+       tarjeta tiene text-align: center, y esta fila se lee mucho mejor
+       alineada a la izquierda como todas las demás. */
+    text-align: left;
+}
+
+.mushroom-cards-grid .mushroom-detail-item.season .mushroom-detail-value {
+    display: block;
+    flex: none;
+    text-align: left;
+    line-height: 1.55;
+    color: var(--text);
+}
+
+.mushroom-cards-grid .mushroom-detail-value {
+    color: var(--text);
+    text-align: right;
+    flex: 1;
+}
+
+.mushroom-cards-grid .mushroom-header h2 {
+    margin-bottom: 0;
+    font-size: 1.1rem;
+}
+
+.mushroom-cards-grid .probability-ring {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 16px;
+}
+
+.mushroom-cards-grid .probability-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.mushroom-cards-grid .ring-bg {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 8;
+}
+
+.mushroom-cards-grid .ring-fill {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dasharray 1s ease;
+}
+
+.mushroom-cards-grid .ring-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.mushroom-cards-grid .ring-text .percentage {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.mushroom-cards-grid .ring-text .label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-light);
+    /* Sin esto, con el anillo reducido a 96 px en móvil, "Potencial" se
+       partía en dos líneas dentro del círculo. */
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+.mushroom-cards-grid .conditions-list {
+    text-align: left;
+}
+
+.mushroom-cards-grid .condition-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+}
+
+.mushroom-cards-grid .condition-item:last-child {
+    border-bottom: none;
+}
+
+.mushroom-cards-grid .condition-status {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.mushroom-cards-grid .condition-status.ok {
+    background: #f6ecd7;
+    color: var(--success);
+}
+
+.mushroom-cards-grid .condition-status.warning {
+    background: #fff3e0;
+    color: var(--warning);
+}
+
+.mushroom-cards-grid .condition-status.danger {
+    background: #ffebee;
+    color: var(--danger);
+}
+
+.map-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.map-sidebar .card {
+    padding: 16px;
+}
+
+.map-sidebar .card h3 {
+    font-size: 1rem;
+    margin-bottom: 12px;
+}
+
+.location-details {
+    font-size: 0.9rem;
+}
+
+.location-details .placeholder-text {
+    color: var(--text-light);
+    font-style: italic;
+}
+
+.location-coords {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+.terrain-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mushroom-probabilities {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.probability-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+}
+
+.probability-icon {
+    font-size: 1.5rem;
+}
+
+.probability-info {
+    flex: 1;
+}
+
+.probability-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.probability-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.probability-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+.probability-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.probability-fill.boletus {
+    background: var(--secondary);
+}
+
+.probability-fill.niscalos {
+    background: #e65100;
+}
+
+/* Map Legend */
+.map-legend {
+    margin-top: 20px;
+}
+
+.legend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+/* ===== FAVORITOS SECTION ===== */
+.favorites-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.add-favorite-form {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 12px;
+    align-items: end;
+    margin-bottom: 12px;
+}
+
+.add-favorite-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.add-favorite-form label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-light);
+}
+
+.add-favorite-form input {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+}
+
+.add-favorite-form input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.hint-text {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    font-style: italic;
+}
+
+.favorites-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.favorite-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    border-left: 4px solid var(--primary);
+}
+
+.favorite-icon {
+    font-size: 1.5rem;
+}
+
+.favorite-info {
+    flex: 1;
+}
+
+.favorite-name {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.favorite-coords {
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+.favorite-probabilities {
+    display: flex;
+    gap: 12px;
+}
+
+.favorite-prob {
+    text-align: center;
+}
+
+.favorite-prob-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.favorite-prob-label {
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.favorite-prob.boletus .favorite-prob-value {
+    color: var(--secondary);
+}
+
+.favorite-prob.niscalos .favorite-prob-value {
+    color: #e65100;
+}
+
+.favorite-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.favorite-btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.favorite-btn.load {
+    background: var(--primary);
+    color: white;
+}
+
+.favorite-btn.load:hover {
+    background: var(--primary-light);
+}
+
+.favorite-btn.delete {
+    background: #ffebee;
+    color: var(--danger);
+}
+
+.favorite-btn.delete:hover {
+    background: #ffcdd2;
+}
+
+/* ===== COMPARAR SECTION ===== */
+.compare-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.compare-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 16px;
+    align-items: end;
+}
+
+.compare-selector .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.compare-selector label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-light);
+}
+
+.compare-selector select {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    background: var(--card-bg);
+}
+
+.compare-selector select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.compare-results {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.compare-location {
+    padding: 20px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    text-align: center;
+}
+
+.compare-location h4 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    color: var(--primary);
+}
+
+.compare-metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+}
+
+.compare-metric:last-child {
+    border-bottom: none;
+}
+
+.compare-metric-label {
+    color: var(--text-light);
+}
+
+.compare-metric-value {
+    font-weight: 600;
+}
+
+.compare-winner {
+    background: #f6ecd7;
+    border: 2px solid var(--success);
+}
+
+.compare-winner::after {
+    content: "🏆 Mejor zona";
+    display: block;
+    margin-top: 12px;
+    padding: 8px;
+    background: var(--success);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.compare-chart-container {
+    height: 300px;
+    position: relative;
+}
+
+/* ===== DETAIL GRID ===== */
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+/* ===== ANALYSIS ITEMS ===== */
+.analysis-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.analysis-item:last-child {
+    border-bottom: none;
+}
+
+.analysis-label {
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+
+.analysis-value {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.analysis-value.good {
+    color: var(--success);
+}
+
+.analysis-value.warning {
+    color: var(--warning);
+}
+
+.analysis-value.bad {
+    color: var(--danger);
+}
+
+/* Progress bars */
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.progress-fill.good {
+    background: var(--success);
+}
+
+.progress-fill.warning {
+    background: var(--warning);
+}
+
+.progress-fill.bad {
+    background: var(--danger);
+}
+
+/* ===== TIMELINE ===== */
+.timeline-card {
+    margin-top: 20px;
+}
+
+.timeline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0;
+    position: relative;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    transform: translateY(-50%);
+}
+
+.timeline-item {
+    position: relative;
+    text-align: center;
+    flex: 1;
+    z-index: 1;
+}
+
+.timeline-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--border);
+    margin: 0 auto 8px;
+    border: 3px solid var(--card-bg);
+    transition: all 0.3s ease;
+}
+
+.timeline-item.active .timeline-dot {
+    background: var(--success);
+    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
+}
+
+.timeline-item.current .timeline-dot {
+    background: var(--info);
+    box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2); }
+    50% { box-shadow: 0 0 0 8px rgba(33, 150, 243, 0.1); }
+}
+
+.timeline-label {
+    font-size: 0.8rem;
+    color: var(--text-light);
+}
+
+.timeline-date {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    margin-top: 2px;
+}
+
+/* ===== CONFIG FORM ===== */
+.config-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    align-items: end;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-light);
+}
+
+.form-group select,
+.form-group input {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    background: var(--card-bg);
+}
+
+.form-group select:focus,
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.btn-primary {
+    padding: 12px 24px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.btn-primary:hover {
+    background: var(--primary-light);
+}
+
+/* ===== CHARTS ===== */
+.analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.chart-container {
+    height: 250px;
+    position: relative;
+}
+
+/* ===== FACTORS GRID ===== */
+.factors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.factor-item {
+    padding: 16px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    border-left: 4px solid var(--primary);
+}
+
+.factor-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+}
+
+.factor-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.factor-desc {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    margin-top: 4px;
+}
+
+/* ===== GUIDE ===== */
+.guide-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.guide-card h3 {
+    color: var(--primary);
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 12px;
+}
+
+.guide-content {
+    padding-top: 16px;
+}
+
+.guide-item {
+    margin-bottom: 20px;
+}
+
+.guide-item h4 {
+    font-size: 1rem;
+    margin-bottom: 8px;
+    color: var(--text);
+}
+
+.guide-item p {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 4px;
+}
+
+.guide-item ul {
+    margin: 8px 0 8px 20px;
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+
+.guide-item.highlight {
+    background: #f6ecd7;
+    padding: 16px;
+    border-radius: var(--radius-sm);
+    border-left: 4px solid var(--success);
+}
+
+.guide-item.highlight h4 {
+    color: var(--success);
+}
+
+/* ===== MODEL EXPLANATION ===== */
+.model-explanation p {
+    margin-bottom: 16px;
+    color: var(--text-light);
+}
+
+.model-params {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+}
+
+.param {
+    padding: 12px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+}
+
+.param-name {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+.param-formula {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    font-family: 'Courier New', monospace;
+}
+
+/* ===== FACTORES COMPACTOS (nuevo modelo) ===== */
+.factors-grid-compact {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+/* Las cuatro cajas de factores de cada tarjeta. Van sobre arena con borde:
+   sin el borde se fundian con la tarjeta blanca y no se sabia ni por donde
+   empezaban. */
+.factor-item-compact {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 6px;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.factor-item-compact .factor-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-light);
+    text-align: center;
+    line-height: 1.2;
+}
+
+.factor-item-compact .factor-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--primary-ink);
+}
+
+/* ===== NIVELES (nuevo modelo) ===== */
+.prediction-banner.nivel-alto {
+    background: #f6ecd7;
+    color: #7a4f14;
+    border: 1px solid #e0c58a;
+}
+
+.prediction-banner.nivel-medio {
+    background: #f7efdc;
+    color: #8a6a2a;
+    border: 1px solid #ddc999;
+}
+
+.prediction-banner.nivel-bajo {
+    background: #fff3e0;
+    color: #ef6c00;
+    border: 1px solid #ffcc80;
+}
+
+.prediction-banner.nivel-nulo {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+}
+
+.status-top {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin-top: 4px;
+}
+
+.status-top strong {
+    color: var(--primary);
+}
+
+/* ===== TABLA RANKING ===== */
+.model-note {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+}
+
+/* El fondo y el color de este "code" se definen más abajo, junto al resto
+   de .model-note. Aquí no se tocan para que no queden dos reglas que se
+   pisen: antes una ponía el fondo marrón y la siguiente el texto negro, y
+   la segunda ganaba, dejando marrón sobre negro, ilegible. */
+.model-note code {
+    font-size: 0.85rem;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    margin-bottom: 12px;
+}
+
+.ranking-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    min-width: 700px;
+}
+
+.ranking-table thead th {
+    background: var(--primary);
+    color: white;
+    padding: 10px 8px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.ranking-table thead th:not(:nth-child(2)):not(:nth-child(10)) {
+    text-align: center;
+}
+
+.ranking-table tbody td {
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+}
+
+.ranking-table tbody tr:hover {
+    background: var(--bg);
+}
+
+.ranking-table tbody tr.row-alta {
+    background: #fbf6ec;
+}
+
+.col-especie {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left !important;
+}
+
+.sp-icon {
+    font-size: 1.4rem;
+}
+
+.sp-latin {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    font-style: italic;
+}
+
+.col-indice {
+    text-align: center !important;
+}
+
+.col-nivel {
+    text-align: left !important;
+    font-size: 0.8rem;
+}
+
+.indice-badge {
+    display: inline-block;
+    min-width: 42px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+/* Escala de niveles como una progresión de dorados, de más intenso a más
+   pálido. El más bajo lleva texto oscuro porque sobre oro claro el blanco
+   no se lee. */
+.indice-badge.nivel-alto {
+    background: #8a5a1b;
+    color: #fffaf2;
+}
+
+.indice-badge.nivel-medio {
+    background: #b8862b;
+    color: #fffaf2;
+}
+
+.indice-badge.nivel-bajo {
+    background: #d9a441;
+    color: #3d2b0f;
+}
+
+.indice-badge.nivel-nulo {
+    background: #e3dbcc;
+    color: #6f6252;
+}
+
+/* ===== AEMET ===== */
+.aemet-intro {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 16px;
+    line-height: 1.6;
+}
+
+.aemet-intro strong {
+    color: var(--primary);
+}
+
+.aemet-intro a {
+    color: var(--info);
+    text-decoration: none;
+}
+
+.aemet-intro a:hover {
+    text-decoration: underline;
+}
+
+.aemet-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+}
+
+.aemet-status-icon {
+    font-size: 1.2rem;
+}
+
+.aemet-status.active {
+    background: #f6ecd7;
+    color: #7a4f14;
+}
+
+.aemet-status.error {
+    background: #ffebee;
+    color: #c62828;
+}
+
+/* ===== SUELO / SOILGRIDS ===== */
+.soil-summary {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: var(--bg-subtle);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--text-light);
+}
+
+.soil-summary strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.soil-note {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.72rem;
+    opacity: 0.75;
+}
+
+.soil-unavailable {
+    color: var(--text-light);
+    font-style: italic;
+}
+
+.model-note {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    background: var(--bg-subtle);
+    border-left: 3px solid var(--primary);
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: var(--text-light);
+}
+
+.model-note strong {
+    color: var(--text);
+}
+
+/* Párrafo de apoyo dentro de la Metodología: un ejemplo concreto que aclara
+   lo que dice el apartado de arriba. Mismo tratamiento que .model-note, que
+   es el bloque de nota de la guía. */
+.method-note {
+    margin: 12px 0 16px;
+    padding: 12px 14px;
+    background: var(--bg-subtle);
+    border-left: 3px solid var(--primary);
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: var(--text-light);
+}
+
+.method-note strong {
+    color: var(--text);
+}
+
+/* Tablas de procedencia de la Metodología: una fila por constante, para que se
+   pueda leer de un vistazo qué está medido y qué está deducido. */
+.param-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    margin-bottom: 6px;
+}
+
+.param-table th {
+    text-align: left;
+    font-weight: 600;
+    padding: 8px 10px;
+    border-bottom: 2px solid var(--primary);
+    color: var(--text);
+    white-space: nowrap;
+    vertical-align: bottom;
+}
+
+.param-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--text-light);
+}
+
+.param-table tbody tr:hover td {
+    background: var(--bg-subtle);
+}
+
+/* Las columnas numéricas van alineadas a la derecha para que las cifras se
+   comparen en vertical, que es de lo que trata la tabla. */
+.param-table td.num,
+.param-table th:nth-child(n + 3):not(:last-child) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* La columna de procedencia es texto largo: en móvil no debe partir la tabla
+   ni empujarla, así que se permite el salto dentro de la celda. */
+.param-table td.fuente {
+    font-size: 0.78rem;
+    line-height: 1.55;
+    min-width: 240px;
+}
+
+/* La fila con el único dato medido en todo el modelo. */
+.param-table tr.fila-medida td {
+    background: rgba(156, 95, 43, 0.1);
+}
+
+.param-table tr.fila-medida td:first-child {
+    border-left: 3px solid var(--primary);
+}
+
+/* Distintivo de evidencia en las tablas de procedencia. */
+.evid {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.evid.documentado {
+    background: rgba(46, 125, 50, 0.14);
+    color: #2e6b31;
+}
+
+.evid.indicado {
+    background: rgba(156, 95, 43, 0.16);
+    color: var(--primary-ink, #7a4f14);
+}
+
+/* La fórmula del modelo va aquí dentro, como código. Con fondo marrón
+   oscuro y texto negro era ilegible; ahora es una etiqueta clara con la
+   fórmula en el color de marca, que sí se distingue. */
+.model-note code {
+    background: var(--card-bg);
+    color: var(--primary);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.hint-text {
+    margin: 14px 0 0;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: var(--text-light);
+}
+
+/* ===== FOOTER ===== */
+.footer {
+    text-align: center;
+    padding: 30px 0;
+    margin-top: 40px;
+    border-top: 1px solid var(--border);
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+.disclaimer {
+    margin-top: 8px;
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+    /* El mapa y la ficha de valores aún caben en dos columnas, pero con
+       menos peso para el mapa. */
+    .dashboard-grid {
+        grid-template-columns: 1.6fr 1fr;
+    }
+
+    .mushroom-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* La rejilla de fichas por especie baja a dos columnas en el mismo
+       punto que las tarjetas del dashboard, para que las dos pantallas
+       mantengan el mismo número de columnas a la vez. */
+    .mushroom-info-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .dashboard-top-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .map-container {
+        grid-template-columns: 1fr;
+    }
+    
+    #map {
+        height: 400px;
+    }
+    
+    .map-sidebar {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .map-sidebar .card {
+        flex: 1;
+        min-width: 280px;
+    }
+    
+    .compare-results {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .header {
+        padding: 20px 0;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+    
+    .logo h1 {
+        font-size: 1.5rem;
+    }
+    
+    .nav {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .nav-btn {
+        white-space: nowrap;
+        padding: 8px 16px;
+        font-size: 0.85rem;
+    }
+    
+    /* Por debajo de 768 px el mapa y la ficha se apilan: en un móvil
+       una columna de 360 px para el mapa es más útil que media.
+       minmax(0, 1fr) y no 1fr: por defecto una pista de grid no baja del
+       ancho mínimo de su contenido, así que un texto largo (un nombre de
+       suelo, un nombre de setal) ensanchaba la columna y empujaba todo lo
+       demás fuera de la pantalla. */
+    .dashboard-grid,
+    .detail-grid,
+    .analysis-grid,
+    .guide-grid,
+    .favorites-container {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* Los hijos de una rejilla también necesitan poder encogerse */
+    .dashboard-grid > *,
+    .mushroom-cards-grid > *,
+    .detail-grid > * {
+        min-width: 0;
+    }
+
+    .dashboard-grid .map-card,
+    .dashboard-grid .terrain-card,
+    .dashboard-grid .mushroom-cards-grid {
+        grid-column: 1;
+        grid-row: auto;
+    }
+
+    .mushroom-cards-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mushroom-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .terrain-card {
+        height: auto;
+    }
+    
+    .config-form {
+        grid-template-columns: 1fr;
+    }
+    
+    .timeline {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .timeline::before {
+        display: none;
+    }
+    
+    #map {
+        height: 300px;
+    }
+    
+    .map-sidebar {
+        flex-direction: column;
+    }
+    
+    .add-favorite-form {
+        grid-template-columns: 1fr;
+    }
+    
+    .compare-selector {
+        grid-template-columns: 1fr;
+    }
+    
+    .favorite-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .favorite-probabilities {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* El texto muy largo (nombres de setal, fuentes) no debe romper la caja */
+.card,
+.glossary dd,
+.mushroom-cards-grid .mushroom-detail-value,
+.mushroom-info-details {
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+/* Elementos de flex que deben poder encogerse por debajo de su contenido.
+   Sin esto, un valor largo ensancha la fila y luego la tarjeta. */
+.mushroom-cards-grid .condition-item > *,
+.mushroom-cards-grid .mushroom-detail-item > *,
+.favorite-info,
+.favorite-item > *,
+.factors-grid-compact > *,
+.factor-item-compact > *,
+.analysis-item > *,
+.summary-item > * {
+    min-width: 0;
+}
+
+.mushroom-cards-grid .condition-value,
+.mushroom-cards-grid .mushroom-detail-value,
+.factors-grid-compact .factor-value,
+.factor-item-compact .factor-label,
+.analysis-item .analysis-label,
+.summary-item .summary-label {
+    overflow-wrap: break-word;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.card {
+    animation: slideIn 0.4s ease forwards;
+}
+
+.card:nth-child(1) { animation-delay: 0.05s; }
+.card:nth-child(2) { animation-delay: 0.1s; }
+.card:nth-child(3) { animation-delay: 0.15s; }
+.card:nth-child(4) { animation-delay: 0.2s; }
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-light);
+}
+
+/* ===== LEAFLET CUSTOMIZATION ===== */
+.leaflet-popup-content-wrapper {
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+}
+
+.leaflet-popup-content {
+    margin: 12px 16px;
+    font-family: 'Inter', sans-serif;
+}
+
+.popup-title {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 4px;
+    color: var(--primary);
+}
+
+.popup-info {
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+.custom-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--primary);
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    font-size: 1.25rem;
+}
+
+/* Zone polygons */
+.zone-polygon {
+    fill-opacity: 0.2;
+    stroke-width: 2;
+    stroke-opacity: 0.8;
+}
+
+.zone-polygon.boletus-zone {
+    fill: #8b4513;
+    stroke: #8b4513;
+}
+
+.zone-polygon.niscalos-zone {
+    fill: #e65100;
+    stroke: #e65100;
+}
+
+.zone-polygon.mixed-zone {
+    fill: #9a6f28;
+    stroke: #9a6f28;
+}
+
+.zone-polygon.low-zone {
+    fill: #9a9086;
+    stroke: #9a9086;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ESTRUCTURA ACTUAL
+   El HTML de la versión actual usa nombres de clase distintos a los
+   de la versión congelada (header-inner, section-head, ti/tl/tv, btn…).
+   Estas reglas cubren los que faltaban; el resto ya existía más arriba.
+   ══════════════════════════════════════════════════════════ */
+
+.main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.header-inner .logo {
+    margin-bottom: 0;
+}
+
+.sources {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.sources span {
+    padding: 5px 12px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.section-head {
+    margin-bottom: 24px;
+}
+
+.section-head h2 {
+    font-size: 1.5rem;
+    margin-bottom: 6px;
+}
+
+.section-head p {
+    color: var(--text-light);
+    font-size: 0.92rem;
+    max-width: 70ch;
+}
+
+/* --- Botón genérico --- */
+.btn {
+    display: inline-block;
+    padding: 11px 20px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn:hover {
+    background: var(--primary-light);
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+/* --- Buscador y selector de zonas --- */
+.search-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.search-row input,
+.geo-select {
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--card-bg);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+}
+
+.search-row input:focus,
+.geo-select:focus {
+    outline: 2px solid var(--primary-light);
+    outline-offset: -1px;
+}
+
+.geo-select {
+    width: 100%;
+    margin-bottom: 12px;
+    cursor: pointer;
+}
+
+.map-card .map {
+    width: 100%;
+    height: 460px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.map-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+}
+
+.map-actions .btn {
+    width: 100%;
+}
+
+/* --- Formulario de guardado de ubicación --- */
+.save-fav-panel {
+    margin-top: 12px;
+    padding: 14px;
+    background: var(--bg-subtle);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--primary);
+}
+
+.save-fav-panel[hidden] {
+    display: none;
+}
+
+.save-fav-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.save-fav-row {
+    display: flex;
+    gap: 8px;
+}
+
+.save-fav-row input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--card-bg);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+}
+
+.save-fav-row input:focus {
+    outline: 2px solid var(--primary-light);
+    outline-offset: -1px;
+}
+
+.save-fav-row .btn {
+    padding: 10px 16px;
+    flex: 0 0 auto;
+}
+
+.save-fav-coords {
+    margin: 8px 0 0;
+    font-size: 0.78rem;
+    color: var(--text-light);
+    font-variant-numeric: tabular-nums;
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--text-light);
+    border: 1px solid var(--border);
+}
+
+.btn-ghost:hover {
+    background: var(--border);
+    color: var(--text);
+}
+
+/* Contador junto al título de la tarjeta de guardadas */
+.count-badge {
+    display: inline-block;
+    min-width: 22px;
+    padding: 2px 8px;
+    background: var(--primary);
+    color: white;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ESPECIES NUEVAS: avisos de toxicidad, alias y procedencia
+   ══════════════════════════════════════════════════════════ */
+
+.toxic-banner {
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    background: #b71c1c;
+    color: #fff;
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    line-height: 1.6;
+}
+
+.toxic-banner strong {
+    display: block;
+    margin-bottom: 4px;
+    letter-spacing: 0.3px;
+}
+
+.toxic-banner span {
+    display: block;
+    font-weight: 300;
+    opacity: 0.95;
+}
+
+.toxic-banner.small {
+    font-size: 0.78rem;
+    padding: 10px 12px;
+    margin: 0 0 12px;
+}
+
+.mushroom-card.inviable .toxic-banner {
+    background: #7f0000;
+}
+
+.mushroom-info-card.toxica {
+    background: #fff5f5;
+}
+
+.mushroom-info-card.toxica .mushroom-info-name {
+    color: #b71c1c;
+}
+
+.mushroom-option.toxica {
+    border-color: #b71c1c;
+}
+
+.mushroom-option.toxica .mushroom-option-name {
+    color: #b71c1c;
+}
+
+.mushroom-option-tox {
+    margin-top: 2px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #b71c1c;
+}
+
+.mushroom-alias,
+.mushroom-info-alias {
+    margin: 3px 0 0;
+    font-size: 0.74rem;
+    font-style: italic;
+    color: var(--text-light);
+}
+
+.mushroom-detail-item.full {
+    grid-column: 1 / -1;
+    align-items: flex-start;
+}
+
+.mushroom-detail-value.toxica {
+    color: #b71c1c;
+    font-weight: 700;
+}
+
+.card-evidencia {
+    margin: 14px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.evidencia-badge {
+    align-self: flex-start;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.ev-publicado {
+    background: #f6ecd7;
+    color: #7a4f14;
+}
+
+.ev-derivado {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.ev-estimado {
+    background: #f7f3ea;
+    color: var(--text-light);
+}
+
+.card-evidencia .fuente {
+    font-size: 0.72rem;
+    line-height: 1.6;
+    color: var(--text-light);
+}
+
+/* ══════════════════════════════════════════════════════════
+   METODOLOGÍA Y LEYENDA
+   ══════════════════════════════════════════════════════════ */
+
+#guia .card > h4,
+#leyenda .card > h4 {
+    margin: 22px 0 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+#guia .card > h4:first-of-type,
+#leyenda .card > h4:first-of-type {
+    margin-top: 16px;
+}
+
+/* Los h5 son un nivel más dentro de un h4: sirven para partir un factor en
+   dos, como «cómo se aplica» dentro de «compatibilidad de hábitat». Un poco más
+   pequeños y sin el color de los h4, que son títulos de factor y ya llevan
+   color. */
+#guia .card > h5,
+#leyenda .card > h5 {
+    margin: 18px 0 6px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text);
+    opacity: 0.85;
+}
+
+#guia .card > p,
+#leyenda .card > p {
+    margin: 0 0 12px;
+    font-size: 0.92rem;
+    line-height: 1.75;
+}
+
+#guia code,
+#leyenda code {
+    padding: 1px 5px;
+    background: var(--bg-subtle);
+    border-radius: 4px;
+    font-family: 'SF Mono', ui-monospace, monospace;
+    font-size: 0.85em;
+    color: var(--primary);
+}
+
+.formula.small {
+    font-size: 0.88rem;
+    padding: 10px;
+    margin: 10px 0 12px;
+}
+
+.level-table {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin: 14px 0 16px;
+}
+
+.level-table > div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg-subtle);
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    font-weight: 500;
+}
+
+.level-table .indice-badge {
+    flex: 0 0 auto;
+    min-width: 62px;
+    text-align: center;
+}
+
+/* --- Glosario de la pestaña Leyenda --- */
+.glossary {
+    margin: 0;
+}
+
+.glossary dt {
+    margin-top: 14px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.glossary dt:first-child {
+    margin-top: 8px;
+}
+
+.glossary dd {
+    margin: 4px 0 0;
+    padding-left: 14px;
+    border-left: 2px solid var(--border);
+    font-size: 0.88rem;
+    line-height: 1.7;
+    color: var(--text-light);
+}
+
+.glossary dd strong {
+    color: var(--text);
+}
+
+.tox-inline {
+    color: #b71c1c;
+    font-weight: 700;
+}
+
+/* --- Suelo y clima: lista de valores --- */
+.terrain-card h3 {
+    margin-bottom: 16px;
+}
+
+/* La lista de valores de la ficha de suelo y clima se define arriba, junto
+   al bloque .terrain-item. Aquí sólo queda el margen del título. */
+
+.status-block {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+/* --- Metodología --- */
+.method-list {
+    margin: 0 0 16px;
+    padding-left: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 0.92rem;
+    line-height: 1.65;
+}
+
+ol.method-list {
+    list-style: decimal;
+}
+
+ul.method-list {
+    list-style: disc;
+}
+
+.method-list.refs {
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+.formula {
+    margin: 16px 0 0;
+    padding: 14px;
+    background: var(--bg-subtle);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    font-family: 'SF Mono', ui-monospace, monospace;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.warn-card {
+    border-left: 4px solid var(--warning);
+    background: #fffbf0;
+}
+
+/* ────────────────────────────────────────────────────────────
+   APARTADOS QUE AVISAN DENTRO DE LA METODOLOGÍA
+   ────────────────────────────────────────────────────────────
+   Los diez apartados de la Metodología viven ahora en una sola
+   tarjeta, así que la clase `warn-card` ya no puede ir en el
+   contenedor: con una tarjeta única habría que warnedla entera,
+   y dejaría de distinguir los dos puntos que sí avisan —qué está
+   medido y qué no, y las limitaciones— del resto.
+
+   El aviso pasa a su encabezado: una barra vertical y el color
+   de aviso, que es el mismo que usaba la tarjeta. El texto no
+   cambia, ni una línea. */
+.card h3.aviso {
+    color: var(--warning);
+    border-left: 4px solid var(--warning);
+    padding-left: 12px;
+    margin-left: -16px;
+}
+
+.hint {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: var(--bg-subtle);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: var(--text-light);
+}
+
+/* --- Valor dentro de las condiciones de la tarjeta --- */
+.mushroom-cards-grid .condition-value {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+/* --- Favoritos: formulario --- */
+.add-fav-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 10px;
+}
+
+.add-fav-row input {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 0.9rem;
+    min-width: 0;
+}
+
+/* --- Aviso de carga --- */
+.loading {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(2px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 9000;
+    font-size: 0.95rem;
+    color: var(--text-light);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.placeholder-text {
+    color: var(--text-light);
+    font-style: italic;
+    padding: 12px 0;
+}
+
+/* --- Aviso de tarjeta no apta --- */
+.mushroom-card.inviable {
+    opacity: 0.75;
+}
+
+.mushroom-card.inviable .probability-ring {
+    filter: grayscale(0.7);
+}
+
+.alert-box {
+    margin: 10px 0;
+    padding: 9px 12px;
+    background: #ffebee;
+    color: #b71c1c;
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+
+.mushroom-title-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.mushroom-titles {
+    min-width: 0;
+}
+
+@media (max-width: 900px) {
+    .add-fav-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .add-fav-row .btn {
+        grid-column: 1 / -1;
+    }
+}
+
+/* El bloque móvil va al final a propósito: con el mismo peso
+   específico, en CSS gana la última regla, y aquí hay reglas de
+   ".main", ".map-card .map" y ".search-row" declaradas más abajo que
+   pisarían los ajustes de móvil si este bloque fuera antes. */
+/* ============================================================
+   MÓVIL
+   Los bloques anteriores cubren 1024 y 768, pero a 390 px el
+   contenido se queda sin sitio: con 20 px de margen de página y
+   24 px de relleno de tarjeta dentro de una pantalla de 390, sólo
+   quedan ~300 px útiles. Este bloque aprieta todo.
+   ============================================================ */
+@media (max-width: 480px) {
+
+    body {
+        font-size: 15px;
+    }
+
+    /* Los avisos flotantes entran desde fuera de la pantalla
+       (translateX(110%)) y, aun siendo position:fixed, ensanchan el
+       documento y crean una barra de scroll horizontal. `clip` los recorta
+       sin crear un contenedor de scroll, a diferencia de `hidden`. */
+    html, body {
+        overflow-x: clip;
+    }
+
+    /* La cabecera ya no lleva márgenes negativos (ver la regla .header de
+       arriba), así que aquí sólo se ajusta el relleno lateral para ganar
+       unos píxeles en pantallas estrechas. */
+    .header {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .header-inner {
+        gap: 10px;
+    }
+
+    .logo-icon {
+        font-size: 2rem;
+    }
+
+    .logo h1 {
+        font-size: 1.4rem;
+    }
+
+    .tagline {
+        font-size: 0.82rem;
+    }
+
+    .main {
+        padding: 0 12px;
+    }
+
+    .card {
+        padding: 14px;
+        border-radius: 10px;
+    }
+
+    .card h2 {
+        font-size: 1.15rem;
+    }
+
+    .card h3 {
+        font-size: 1rem;
+    }
+
+    .section-head h2 {
+        font-size: 1.25rem;
+    }
+
+    .dashboard-grid {
+        gap: 14px;
+    }
+
+    /* Mapa algo más bajo: en vertical deja ver la ficha de suelo.
+       Se usa el id, no la clase, porque la regla general #dashboardMap
+       (500 px) tiene más especificidad que .map-card .map y ganaba. */
+    #dashboardMap,
+    .map-card .map {
+        height: 320px;
+    }
+
+    /* El buscador y el botón en dos líneas en vez de uno al lado del otro */
+    .search-row {
+        flex-wrap: wrap;
+    }
+
+    .search-row input {
+        flex: 1 1 100%;
+    }
+
+    .search-row .btn {
+        flex: 1 1 100%;
+    }
+
+    /* Formulario de guardado de setal apilado */
+    .save-fav-row {
+        flex-wrap: wrap;
+    }
+
+    .save-fav-row input {
+        flex: 1 1 100%;
+    }
+
+    .save-fav-row .btn {
+        flex: 1 1 auto;
+    }
+
+    /* Barras de factores a una columna: con dos, cada celda queda
+       ilegible a 390 px. */
+    .factors-grid-compact {
+        grid-template-columns: 1fr;
+    }
+
+    /* Anillo más pequeño */
+    .mushroom-cards-grid .probability-ring {
+        width: 104px;
+        height: 104px;
+    }
+
+    .mushroom-cards-grid .ring-text .percentage {
+        font-size: 1.5rem;
+    }
+
+    .mushroom-cards-grid .ring-text .label {
+        font-size: 0.68rem;
+    }
+
+    .mushroom-cards-grid .mushroom-name {
+        font-size: 1.05rem;
+    }
+
+    /* Etiqueta y valor en columna, para que la etiqueta no se recorte */
+    .mushroom-cards-grid .condition-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+
+    /* La ficha de suelo no necesita nada especial en móvil: el rótulo ya va
+       encima y el dato debajo en todos los tamaños, así que las once filas
+       se leen igual que en escritorio. Sólo se agranda un poco el dato. */
+
+    .mushroom-cards-grid .condition-value {
+        text-align: left;
+    }
+
+    .mushroom-cards-grid .mushroom-detail-item {
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    /* La tabla del Análisis tiene 11 columnas. A 390 px eso no es una tabla
+       con scroll: es una tabla ilegible con cada celda de 30 px. En móvil se
+       quedan sólo las seis que resumen (especie, índice, S, H, T y estado) y
+       las de detalle se ocultan. El detalle completo sigue en la ficha de
+       cada especie y en la pestaña Especies. */
+    .ranking-table {
+        min-width: 0;
+        font-size: 0.8rem;
+    }
+
+    .ranking-table thead th:nth-child(5),
+    .ranking-table tbody td:nth-child(5),     /* A      */
+    .ranking-table thead th:nth-child(7),
+    .ranking-table tbody td:nth-child(7),     /* GDD    */
+    .ranking-table thead th:nth-child(8),
+    .ranking-table tbody td:nth-child(8),     /* Lluvia */
+    .ranking-table thead th:nth-child(9),
+    .ranking-table tbody td:nth-child(9),     /* T° opt */
+    .ranking-table thead th:nth-child(10),
+    .ranking-table tbody td:nth-child(10) {   /* F. hábitat */
+        display: none;
+    }
+
+    .ranking-table thead th,
+    .ranking-table tbody td {
+        padding: 8px 5px;
+    }
+
+    .ranking-table .col-especie {
+        width: auto;
+    }
+
+    .ranking-table .sp-icon {
+        display: none;
+    }
+
+    .table-wrapper {
+        margin-left: -14px;
+        margin-right: -14px;
+        padding: 0 14px;
+        overflow-x: visible;
+    }
+
+    /* Formulario manual de setales */
+    .add-fav-row {
+        grid-template-columns: 1fr;
+    }
+
+    .add-fav-row .btn {
+        grid-column: auto;
+    }
+
+    /* Botones de la lista de setales guardados, a lo ancho */
+    .favorite-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .favorite-btn {
+        flex: 1;
+    }
+
+    .glossary dd {
+        padding-left: 10px;
+    }
+
+    /* La etiqueta de procedencia es larga y no debe forzar scroll */
+    .evidencia-badge {
+        white-space: normal;
+        text-align: center;
+    }
+
+    .mushroom-info-grid,
+    .mushroom-selector {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* El mapa tiene aquí su altura propia: la ficha de suelo ya no la manda,
+       porque en móvil las dos tarjetas van apiladas y no comparten fila. */
+    #dashboardMap {
+        flex: 0 0 auto;
+        min-height: 320px;
+    }
+
+    /* Los rótulos largos ("Temperatura media del suelo en 24h") se partían en
+       dos líneas a 360 px y dejaban esas dos filas más altas que las demás.
+       Bajando un punto el rótulo y otro el dato, cada fila cabe en una línea
+       y el rótulo sigue siendo mayor que el dato, que es lo pedido. */
+    .terrain-item .tl {
+        font-size: 0.88rem;
+    }
+
+    .terrain-item .tv {
+        font-size: 0.8rem;
+    }
+
+    .level-table {
+        grid-template-columns: 1fr;
+    }
+
+    .method-list {
+        padding-left: 18px;
+        gap: 8px;
+    }
+
+    .formula {
+        font-size: 0.8rem;
+        padding: 10px;
+    }
+
+    .footer p {
+        padding: 0 12px;
+    }
+}
+
+/* ============================================================
+   ETIQUETAS DE HÁBITAT EN LAS TARJETAS
+   ============================================================
+   Cada hábitat de la especie es una etiqueta propia en vez de una línea de
+   texto seguido. El motivo es que las listas son largas: el boleto declara
+   ocho hábitats y la seta de ostra diez, y con guiones sueltos la fila se
+   convertía en un bloque de texto que empujaba el alto de la tarjeta y
+   descuadraba la rejilla de tres columnas.
+
+   Las que coinciden con el punto van destacadas; las demás se atenúan, para
+   que se lea de un vistazo si la especie tiene dónde crecer aquí. */
+.mushroom-cards-grid .condition-item-wrap {
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.mushroom-cards-grid .condition-item-wrap > span:first-child {
+    flex: 0 0 auto;
+    padding-top: 2px;
+}
+
+.mushroom-cards-grid .condition-item-wrap .condition-value {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: flex-end;
+    line-height: 1.7;
+}
+
+.hab-tag {
+    display: inline-block;
+    padding: 1px 7px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.03);
+    font-size: 0.72rem;
+    line-height: 1.5;
+    white-space: nowrap;
+    cursor: help;
+    opacity: 0.62;
+}
+
+/* El que está presente en el punto. El color de fondo es el mismo marrón de
+   la paleta otoñal del sitio, no un color nuevo. */
+.hab-tag.hab-hit {
+    border-color: var(--accent, #8b4513);
+    background: rgba(139, 69, 19, 0.12);
+    font-weight: 600;
+    opacity: 1;
+}
+
+/* En oscuro, el relleno del acierto necesita más contraste para que no se
+   funda con el fondo de la tarjeta. */
+@media (prefers-color-scheme: dark) {
+    .hab-tag {
+        background: rgba(255, 255, 255, 0.05);
+        opacity: 0.55;
+    }
+
+    .hab-tag.hab-hit {
+        background: rgba(230, 160, 90, 0.2);
+        opacity: 1;
+    }
+}
+
+/* ============================================================
+   ESPERA DE CARGA
+   ============================================================
+   Sustituye a las tarjetas mientras llegan las tres fuentes. No se pinta un
+   ranking con ceros porque un 0 % de Precaución se lee como "aquí no hay
+   boleto", que es lo contrario de "todavía no lo sé". */
+.loading-tarjetas {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 10px;
+    padding: 48px 24px;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border);
+    border-radius: var(--radius, 12px);
+    color: var(--text, #333);
+}
+
+.loading-spinner {
+    width: 34px;
+    height: 34px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent, #8b4513);
+    border-radius: 50%;
+    animation: loading-giro 900ms linear infinite;
+}
+
+@keyframes loading-giro {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .loading-spinner {
+        animation-duration: 3s;
+    }
+}
+
+.loading-error {
+    font-size: 2rem;
+}
+
+.loading-titulo {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.loading-detalle {
+    margin: 0;
+    max-width: 46ch;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    opacity: 0.85;
+}
+
+.loading-nota {
+    margin: 0;
+    max-width: 52ch;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    opacity: 0.6;
+}
+
+.loading-tarjetas .btn {
+    margin-top: 6px;
+}
+/* ============================================================
+   EJEMPLO NUMÉRICO DE LA METODOLOGÍA
+   ============================================================
+   Tabla de la multiplicación paso a paso. Va como rejilla de cuatro columnas
+   en vez de <table> porque así el CSS de móvil es trivial: se aplila a una
+   columna sin tocar el HTML. El contenido es texto corto, así que no se pierde
+   semántica. */
+.ejemplo-tabla {
+    display: grid;
+    grid-template-columns: 3.2rem 1fr 4rem 5.5rem;
+    gap: 2px 10px;
+    margin: 14px 0;
+    padding: 12px 14px;
+    background: rgba(139, 69, 19, 0.06);
+    border: 1px solid var(--border);
+    border-radius: var(--radius, 10px);
+    font-size: 0.86rem;
+    line-height: 1.5;
+}
+
+.ejemplo-tabla > div {
+    display: contents;
+}
+
+.ejemplo-tabla > div > span {
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(139, 69, 19, 0.12);
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+/* La cabecera no lleva fila propia: se paints con el mismo sistema, pero sin
+   borde para que separe de golpe. */
+.ejemplo-cab > span {
+    font-weight: 700;
+    font-size: 0.74rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    border-bottom: 1px solid rgba(139, 69, 19, 0.35);
+}
+
+/* El 100 de partida y la nota que arrastra. */
+.ej-n {
+    opacity: 0.6;
+}
+
+/* La nota del factor: es el dato clave, se lee en tabular para que las
+   columnas de números queden alineadas. */
+.ej-v {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+/* El parcial: el resultado de la multiplicación hasta ese momento. */
+.ej-p {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.8;
+}
+
+.ej-total > span {
+    font-weight: 700;
+    border-bottom: none;
+    padding-top: 9px;
+    border-top: 2px solid rgba(139, 69, 19, 0.35);
+}
+
+.ej-total > .ej-p {
+    opacity: 1;
+    color: var(--accent, #8b4513);
+    font-size: 0.95rem;
+}
+
+.ejemplo-tabla sup {
+    font-size: 0.7em;
+}
+
+@media (max-width: 640px) {
+    .ejemplo-tabla {
+        grid-template-columns: 2.6rem 1fr 3.6rem;
+        font-size: 0.8rem;
+    }
+
+    /* En móvil la cuarta columna (parcial) estorba más de lo que aporta: el
+       parcial se deduce de la nota. Se oculta y queda el resto. */
+    .ejemplo-cab > span:last-child,
+    .ej-total > .ej-p {
+        display: none;
+    }
+
+    .ej-total > span:nth-child(2) {
+        font-weight: 700;
+        text-align: right;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .ejemplo-tabla {
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    .ejemplo-tabla > div > span {
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .ejemplo-cab > span {
+        border-bottom-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .ej-total > span {
+        border-top-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .ej-total > .ej-p {
+        color: #e6a05a;
+    }
+}
+
+
+/* ============================================================
+   HIJOS DE REJILLA QUE DEBEN PODER ENCOGERSE
+   ============================================================
+   Complemento del `min-width: 0` que ya aplican las rejillas del dashboard,
+   pero este va fuera de cualquier @media porque el defecto no es de móvil:
+   aparece en cuanto una columna de `1fr` queda más estrecha que su contenido.
+
+   El valor por defecto de `min-width` en un elemento de rejilla es `auto`, y
+   `auto` significa "tan ancho como mi contenido, siempre". Con eso, dos
+   columnas de 1fr dentro de 796 px piden 828 px (404 + 404 + 20 de hueco), se
+   salen 32 px por la derecha, y la última tarjeta queda pegada al borde de la
+   pantalla mientras por la izquierda sigue habiendo 44 px de margen.
+
+   Solo se declara `min-width: 0`. No se toca `grid-template-columns`: el
+   número de columnas lo sigue mandando el proyecto por sus puntos de
+   ruptura, que es lo correcto. Un intento anterior de arreglarlo redefiniendo
+   las columnas aquí pisó esos puntos de ruptura y descuadró la pantalla.
+*/
+.mushroom-info-grid > *,
+.mushroom-selector > *,
+.detail-grid > * {
+    min-width: 0;
+}
