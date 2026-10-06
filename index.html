@@ -49,7 +49,7 @@
           lo que había antes de que existiera. Los siguientes los sube quien
           cambia algo, y en el mismo cambio.
         -->
-        <p class="version" id="versionBadge" title="Versión de la aplicación">v2.0</p>
+        <p class="version" id="versionBadge" title="Versión de la aplicación">v2.1</p>
       </div>
     </div>
   </div>
@@ -134,9 +134,6 @@
         </div>
         <div class="soil-summary" id="soilSummary"></div>
 
-        <!-- La valoración de condiciones se quitó de aquí: competía en
-             pantalla con el anillo de cada tarjeta y repetía lo que ya
-             dicen los índices de todas las especies. -->
         <div class="last-update" id="lastUpdate"></div>
       </div>
 
@@ -264,12 +261,9 @@
         varias a la vez cuando el bosque es mixto: pinar más hayedo en la misma
         parcela. Devuelve además el nombre científico del árbol dominante, que es
         lo que aparece al pasar el ratón por una etiqueta de hábitat de la tarjeta.
-
         Se consulta además su capa <code>ff_uso</code>, que es la misma fuente
-        y responde a la pregunta distinta: si aquí no hay bosque, <em>qué hay</em>.
-        Pradera, campo de cultivo o matorral, con el código oficial LULUCF.</li>
-      <li><strong>OpenStreetMap vía Overpass</strong> — sólo para un caso: cuando el
-        MFE dice que en el punto no hay bosque, hace falta distinguir entre un
+      y responde a la pregunta distinta: si aquí no hay bosque, <em>qué hay</em>.
+      Pradera, campo de cultivo o matorral, con el código oficial LULUCF.</li>
       <li><strong>OpenStreetMap vía Overpass</strong> — el tercer paso, y sólo
         para un caso: cuando el MFE no da bosque <em>y</em> su capa de usos no da
         ninguna clase aprovechable, hace falta distinguir entre un descampado y una
@@ -277,9 +271,6 @@
         significa núcleo urbano. Deliberadamente no se usa ni para el bosque ni
         para la pradera, porque donde OSM es excelente —las ciudades— es justo
         donde no hay setas, y donde las hay casi no tiene nada cartografiado.</li>
-        Diez o más significa núcleo urbano. Deliberadamente no se usa para el
-        bosque, porque donde OSM es excelente —las ciudades— es justo donde no
-        hay setas, y donde hay pinares casi no tiene nada cartografiado.</li>
       <li><strong>OpenStreetMap / Nominatim</strong> — toponimia y mapa. Si el
         servicio no responde, la app sigue funcionando y muestra coordenadas en
         lugar del nombre del pueblo.</li>
@@ -289,12 +280,12 @@
         (TIKAL, 2012); cada ficha cita también el contraste con Waldschatzfinder y
         Wikipedia. Está todo detalhado en el <a href="#">apartado 4</a>.</li>
     </ul>
-    <p class="hint">Las tres primeras son medidas o cartografía real. La cuarta es
-    una fuente secundaria: el GeoServer del IEPNB que sirve el MFE tiene un
-    problema conocido —el parámetro <code>bbox</code> de WFS no filtra y hay que
-    usar <code>CQL_FILTER=BBOX(geom, …)</code>—, así que la consulta está escrita
-    a mano y cada capa tiene un tope de 12 segundos para que una que se cuelgue
-    no tumbe a las otras treinta.</p>
+      <p class="hint">Las tres primeras son medidas o cartografía real. El MFE se
+      sirve por el GeoServer del IEPNB, que tiene un problema conocido —el parámetro
+      <code>bbox</code> de WFS no filtra y hay que usar
+      <code>CQL_FILTER=BBOX(geom, …)</code>—, así que la consulta está escrita a
+      mano y cada capa tiene un tope de 12 segundos para que una que se cuelgue no
+      tumbe a las otras treinta.</p>
     <p class="hint">Open-Meteo ya corrige la temperatura por la elevación del punto
     de la rejilla (gradiente de 0,0065 °C/m). Aplicar ese gradiente otra vez sería
     contarlo dos veces y, en un punto de 2400 m, restar 12 °C de más, así que el
@@ -365,34 +356,27 @@
       <li>fuera de la ventana → <strong>0 %</strong>, y la tarjeta lo dice con «fuera
         de temporada». La especie no se calcula y no sale en el panel.</li>
     </ul>
-    <p>Antes era un peso y no un veto: 100 % dentro, 45 % hasta dos meses fuera y
-    15 % más lejos. El cambio a veto se decidió el 6 de octubre de 2026.</p>
     <p>Hay una consecuencia que conviene conocer antes de usarla en enero: la unión
     de las 19 ventanas deja <strong>enero sin ninguna especie</strong>, y febrero,
     marzo y diciembre con una o dos. En esos meses el panel avisa de que no hay
     ninguna en temporada, con su recuento, en lugar de quedarse en blanco. No es un
     fallo de la aplicación: es lo que dicen las fichas.</p>
-    <p class="hint">Lo que <strong>no</strong> se ha corregido, y es un error
-    conocido, es que la ventana de meses es la misma a 100 m que a 2000 m. En
-    montaña las setas se retrasan, así que un corte estricto borra en el Pirineo la
-    colmenilla de abril, que allí es de mayo o junio, y la deja en el sur, donde sí
-    es de abril. Arreglarlo exigiría una regla de desplazamiento por altitud, y eso
-    sería inventar un número que no está en ninguna fuente. Se dejó anotado en vez
-    de inventado.</p>
+    <p class="hint">Limitación conocida: la ventana de meses es la misma a 100 m que
+    a 2000 m. En montaña las setas se retrasan, así que un corte estricto borra en el
+    Pirineo la colmenilla de abril, que allí es de mayo o junio, y la deja en el sur,
+    donde sí es de abril. Corregirlo exigiría una regla de desplazamiento por altitud,
+    y eso sería inventar un número que no está en ninguna fuente. Queda anotado, no
+    inventado.</p>
     <p>La ventana se usa tal cual la documenta el libro. Si una ficha no la declara,
     no hay veto: no saber la temporada es no saber, y no saber no anula nada. Es el
     mismo criterio que el del hábitat sin cartografiar.</p>
 
     <h4>🌲 F<sub>hábitat</sub> · Compatibilidad de hábitat</h4>
-    <p>Es el factor que más ha cambiado de los ocho, y el que más pesa. Antes se
-   respondía a la pregunta «¿qué bosque debería haber aquí?» a partir de la
-    latitud y la longitud, con seis condicionales: toda la franja entre los 40,5
-    y los 42,5 grados devolvía «pinar, robledal, bosque mixto». Eso hacía que un
-    boleto Puntara con el 100 % de compatibilidad en la Plaza Mayor, porque las
-    coordenadas no distinguen un pinar de una calle.</p>
-    <p>Ahora se pregunta al <strong>Mapa Forestal de España</strong>. La consulta
-    funciona así, y conviene entenderlo porque explica lo que ves en la tarjeta:
-    se mandan a la vez unas treinta preguntas del tipo «¿cubre un hayedo el punto
+    <p>Es el factor que más pesa de los ocho, y el que decide si una especie sale o
+    no. Responde a la pregunta «¿qué bosque hay aquí?» preguntándoselo al
+    <strong>Mapa Forestal de España</strong>. La consulta funciona así, y conviene
+    entenderlo porque explica lo que ves en la tarjeta: se mandan a la vez unas treinta
+    preguntas del tipo «¿cubre un hayedo el punto
     que estoy mirando, en un radio de 120 metros?», una por cada tipo de bosque que
     distingue el MFE. Las que reciben respuesta son las que están ahí. Si dos
     coinciden a la vez —un pinar con hayedos entre medias— la tarjeta enseña las
@@ -404,17 +388,15 @@
     oficial LULUCF. Es la que traduce «Pastizales con vegetación herbácea (GLg)» a
     pradera, «Tierras de cultivo (CL)» a cultivo y «Pastizales con vegetación
     arbustiva (GLs)» a matorral. Sin esta capa, senderuela y champiñón silvestre no
-    tenían ningún hábitat que el MFE les pudiera confirmar jamás, porque un mapa
+    tendrían ningún hábitat que el MFE les pudiera confirmar jams: un mapa
     forestal no dice «pradera»: no dice nada.</p>
     <p>Sólo si tampoco esa capa da una clase aprovechable se consulta OpenStreetMap,
     y para lo único que sirve bien: distinguir una plaza de un descampado. Diez o más
     edificios en 150 metros es núcleo urbano. Un punto sin datos en OSM no se da por
     campo: en el campo OSM no tiene nada y en un pueblo lo tiene todo.</p>
-    <p class="hint">Cuando no hay dato, la tarjeta dice <strong>«Sin hábitat
-    conocido»</strong> y el factor se queda en 0,70. Antes devolvía «pradera» como si
-    la hubiera medido, y eso llegaba hasta el modelo: las pratenses sacaban 1,00 y las
-    demás 0,13 en cualquier punto sin bosque cartografiado. Un dato que nadie ha
-    medido no puede decidir un ranking.</p>
+      <p class="hint">Cuando no hay dato, la tarjeta dice <strong>«Sin hábitat
+      conocido»</strong> y el factor se queda en 0,70. Un dato que nadie ha medido no
+      puede decidir un ranking: no saber no es saber que no crece.</p>
     <p class="hint">Esto no es perfecto. El MFE es una parcelaria: mide lo que había
     cuando se levantó, y no recoge un pinar joven ni una repoblación de diez años. Y
     la capa de usos tiene huecos: en la playa de Gijón no hay ni una parcela, y allí
@@ -452,19 +434,12 @@
         restos vegetales, que no hay en una plaza. Se marca consultando la densidad de
         edificios en OpenStreetMap.</li>
     </ul>
-    <p class="hint">Las correcciones existen porque el modelo toma una decisión de
-    <p class="hint">El veto del hábitat llegó tarde, y es la decisión de diseño que
-    conviene no pasar por alto. Antes el modelo <em>degradaba</em>: una especie que no
-    encajaba bajaba a 25 % o a 5 %, y nunca a cero. La razón era que el hábitat se
-    adivinaba a partir de las coordenadas, con seis «y si», y un veto duro habría
-    borrado la especie entera de la pantalla por un dato inventado.</p>
-    <p class="hint">Hoy el hábitat viene del Mapa Forestal de España, en dos capas
-    oficiales, y se ha comprobado que <strong>ninguna de las 19 especies se queda sin
-    salida</strong>: todas aceptan al menos un hábitat que una de esas capas puede dar.
-    Con eso el veto es aplicable. Lo que <strong>no</strong> se veta es la falta de dato:
-    una lista vacía sigue valiendo 0,70, porque no saber no es no encajar. Si el veto
-    fuera antes, cualquier punto sin cartografiar sacaría a las 19 especies y no
-    aparecería ninguna.</p>
+    <p class="hint">El veto es aplicable porque el hábitat sale del Mapa Forestal de
+    España, en dos capas oficiales, y se ha comprobado que <strong>ninguna de las 19
+    especies se queda sin salida</strong>: todas aceptan al menos un hábitat que una de
+    esas capas puede dar, de modo que nunca borra una especie entera de la pantalla por
+    falta de cobertura. Lo que <strong>no</strong> se veta es la falta de dato: una lista
+    vacía sigue valiendo 0,70, porque no saber no es no encajar.</p>
     <p class="hint">El veto es tan estricto como las fichas, y conviene decirlo: en una
     dehesa de la Extremadura el MFE cartografia <code>dehesa</code>, y de las 19 especies
     sólo una tiene <code>dehesa</code> entre sus hábitats, el boleto bronce. Las otras 18
@@ -563,10 +538,10 @@
     datos: nadie ha medido cuánta producción pierde un boleto por una noche de −5 °C.
     Lo que sí es sólido es la forma: gradual, con memoria, distinta por especie y con
     recuperación.</p>
-    <p>La <em>temporada</em> sí es un veto, desde el 6 de octubre de 2026: fuera de la
-    ventana documentada el índice es 0 y la especie no sale en el panel. Antes era un
-    peso. El coste está escrito en su propio apartado, «T · Temporada documentada»:
-    la unión de las 19 ventanas deja enero sin ninguna especie.</p>
+    <p>La <em>temporada</em> es el tercer veto del modelo, con los dos de hábitat y de
+    pH: fuera de la ventana documentada el índice es 0 y la especie no sale en el
+    panel. Su coste está escrito en su propio apartado, «T · Temporada
+    documentada»: la unión de las 19 ventanas deja enero sin ninguna especie.</p>
 
     <h4>⛰️ F<sub>altitud</sub> · Factor altitudinal</h4>
     <p>Cada especie tiene su propia banda altitudinal, en metros, con la misma forma de
@@ -614,11 +589,11 @@
         <code>tCrit</code> ≤ 3: el <strong>marzuelo</strong> (2 °C y −4 °C, los más
         bajos de todas: fructifica con la nieve encima), capuchina,
         gula de monte y seta de pie azul. Toleran el frío y la helada.</li>
-      <li><strong>El perrechico ya no está en este grupo.</strong> Lo estaba porque
-        su <code>tBase</code> es 6, pero su temporada documentada es de primavera
+      <li><strong>El perrechico no está en este grupo</strong>, pese a que su
+        <code>tBase</code> es 6 °C: su temporada documentada es de primavera
         (abril-junio en Laux, «April to June» en Wikipedia, mayo-junio en
         Waldschatzfinder, y el <em>perretxiko</em> se come el 28 de abril en el
-        País Vasco). Es el caso más claro despecies con parámetros térmicos y
+        País Vasco). Es el caso más claro de especie con parámetros térmicos y
         ventana de temporada desalineados, y está anotado en Limitaciones.</li>
       <li><strong>Especies de otoño</strong>, la mayoría, con <code>tBase</code> entre 7 y
         10 y <code>tCrit</code> entre 2 y 6.</li>
@@ -1116,19 +1091,18 @@
 
     <h4>4.8 · Las ventanas de temporada</h4>
     <p>Los meses de fructificación de cada especie salen de las fichas micológicas, y es,
-    junto con el hospedante, el dato más firme de que se dispone en micología. Desde el
-    6 de octubre de 2026 <strong>entra como veto</strong>: fuera de la ventana el índice
-    es 0 y la especie no se calcula.</p>
+    junto con el hospedante, el dato más firme de que se dispone en micología. Por eso
+    <strong>entra como veto</strong>: fuera de la ventana el índice es 0 y la especie no se
+    calcula.</p>
     <ul class="method-list">
       <li>dentro de la ventana → <strong>100 %</strong></li>
       <li>fuera de la ventana → <strong>0 %</strong>, con el motivo «fuera de
         temporada»</li>
     </ul>
-    <p>Antes era un peso: 100 % dentro, 45 % hasta dos meses de distancia y 15 % más
-    lejos, con la distancia medida en el círculo del calendario. Ese caso ya no existe:
-    con veto no hay distancia intermedia, o el mes está en la ventana o no lo está.</p>
-    <p class="hint">Lo que se aceptó al pasarlo a veto, y conviene tener presente al usar
-    la aplicación en invierno: la unión de las 19 ventanas deja <strong>enero sin ninguna
+    <p>El corte es seco: o el mes está en la ventana, o no lo está. No hay distancia
+    intermedia ni margen de gracia, porque el veto es de calendario y no de condiciones.</p>
+    <p class="hint">Consecuencia que conviene tener presente al usar la aplicación en
+    invierno: la unión de las 19 ventanas deja <strong>enero sin ninguna
     especie</strong>, febrero con una, marzo con una y diciembre con dos. En esos meses
     el panel dice cuántas hay y por qué, en vez de quedarse vacío a secas. Y la ventana
     no se desplaza con la altitud, que es su error conocido: en el Pirineo la
@@ -1243,8 +1217,8 @@
         ordenan de mayor a menor índice. Es instantáneo: el cálculo entero tarda
         menos de un milisegundo.</li>
       <li><strong>Se pinta una sola vez</strong>, con la meteorología, el suelo y el
-        hábitat ya dentro. Antes se pintaba tres veces y el usuario veía el mismo
-        sitio con tres números distintos; por eso el punto se pide de una vez.</li>
+        hábitat ya dentro. Por eso el punto se pide de una vez: una sola
+        petición, un solo número.</li>
     </ol>
     <p class="hint">Lo que cachea la aplicación, para no machacar servicios
     gratuitos: el suelo 180 días por la rejilla de 250 m de SoilGrids, el bosque
@@ -1283,10 +1257,8 @@
         Forestal de España (MFE) del MITECO, servido por el GeoServer del IEPNB, con
         dos capas: los tipos de bosque y, si no hay árbol, el uso del suelo. Solo
         cuando tampoco eso se sabe se mira la densidad de edificios en
-        OpenStreetMap para distinguir una plaza de un descampado. Antes de esto la
-        vegetación se sacaba de la latitud y la longitud, que era la fuente de
-        error más grave del modelo. Lo que no hay es resolvedor de exposición ni
-        de micrositio: eso sigue sin dato.</li>
+        OpenStreetMap para distinguir una plaza de un descampado. Lo que no hay es
+        resolvedor de exposición ni de micrositio: eso sigue sin dato.</li>
       <li>No se modela la fotosíntesis del hospedante, que en ectomicorrícicos explica
         parte importante de la respuesta a la precipitación.</li>
       <li>No se modela la competencia con otros hongos ni el daño porenangiosperma.</li>
@@ -1294,12 +1266,12 @@
         distinto del que hay bajo tus pies.</li>
       <li>Sin observaciones propias el índice no está validado. Úsalo como
         orientación, nunca como garantía.</li>
-      <li><strong>El veto de temporada deja meses casi vacíos.</strong> Desde el 6 de
-        octubre de 2026, fuera de la ventana documentada el índice es 0 y la especie no
-        sale en el panel. La unión de las 19 ventanas deja <strong>enero sin ninguna
-        especie</strong>, febrero y marzo con una, y diciembre con dos. En esos meses
-        el panel dice cuántas hay y por qué, en lugar de quedarse en blanco, pero es un
-        dato que hay que tener en cuenta antes de mirar el panel en invierno.</li>
+      <li><strong>El veto de temporada deja meses casi vacíos.</strong> Fuera de la
+        ventana documentada el índice es 0 y la especie no sale en el panel. La unión de
+        las 19 ventanas deja <strong>enero sin ninguna especie</strong>, febrero y marzo
+        con una, y diciembre con dos. En esos meses el panel dice cuántas hay y por
+        qué, en lugar de quedarse en blanco, pero es un dato que hay que tener en cuenta
+        antes de mirar el panel en invierno.</li>
       <li><strong>La ventana de temporada no se desplaza con la altitud.</strong> Es el
         error conocido del veto: en montaña las setas se retrasan, así que la colmenilla
         —abril-mayo según el libro— se borra en el Pirineo, donde es de mayo o junio, y
@@ -1557,9 +1529,9 @@
           etiqueta se dice si coincide o no, y si el Mapa Forestal de España ha
           identificado qué árbol la forma, se dice también el nombre.</dd>
         <dd>El <strong>factor de hábitat</strong> de los detalles es el resultado
-          de comparar esa lista con lo que hay en el punto. Antes esta fila
-          enseñaba un solo hábitat, el primero de la lista que coincidía, y con
-          ocho o diez hábitats por especie eso no decía nada útil.</dd>
+          de comparar esa lista entera con lo que hay en el punto, y por eso una
+          especie con ocho o diez hábitats admitidos puede dar un factor alto
+          aunque en el punto no haya más que uno.</dd>
         <dd>Los hábitats salen del Mapa Forestal de España (MFE) del MITECO
           consultado en el punto, no de las coordenadas. Cuando el MFE dice que
           no hay bosque, se mira la densidad de edificios en OpenStreetMap para

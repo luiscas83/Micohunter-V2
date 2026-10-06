@@ -2983,7 +2983,7 @@ grupo('26. El número de versión existe y está bien escrito');
 // número que mueve una predicción sube el primero. Aquí se comprueba que el
 // número está donde tiene que estar y que no se ha roto.
 
-const VERSION = 'v2.0';
+const VERSION = 'v2.1';
 
 prueba('el número de versión está debajo del lema, en la cabecera', () => {
   const html = require('fs').readFileSync('index.html', 'utf8');
