@@ -1352,7 +1352,7 @@ prueba('cada fila de la tabla de umbrales lleva los numeros de SU especie', () =
 prueba('cada especie tiene su fila en la tabla de bandas altitudinales', () => {
   // Salvedad: la seta de pie azul no aparece. No es un descuido: su banda se
   // deduce sin ninguna fuente publicada, y el parrafo 4.5 explica que las
-  // bandas sin rango en metros van por deducci\u00f3n del h\u00e1bitat. Al
+  // bandas sin rango en metros van por deducción del hábitat. Al
   // contrary que en la tabla de umbrales, aqui solo falta una.
   const sinFila = ['Lepista nuda'];
 
@@ -1390,7 +1390,7 @@ prueba('la banda y el margen de la tabla son los de SU especie', () => {
     assert.ok(sp, 'la tabla lista ' + latin + ', que no esta en SPECIES');
     if (!sp.alt) continue;
 
-    const banda = fila.match(/class="num">([\d.,]+)\s*[\u2013\u2014-]\s*([\d.,]+)\s*m?<\/td>/);
+    const banda = fila.match(/class="num">([\d.,]+)\s*[–—-]\s*([\d.,]+)\s*m?<\/td>/);
     if (!banda) continue;   // fila sin banda escrita, que es la del pie azul
 
     const n = (x) => Number(String(x).replace(',', '.'));
@@ -1444,7 +1444,7 @@ prueba('los recuentos sueltos de la pagina dicen lo que dicen', () => {
   assert.strictEqual(Number(badge[1]), doc,
     'el badge dice ' + badge[1] + ' documentadas y hay ' + doc);
 
-  const lim = txt.match(/De las (\d+) bandas altitudinales, (\d+) est\u00e1n estimadas/);
+  const lim = txt.match(/De las (\d+) bandas altitudinales, (\d+) están estimadas/);
   assert.ok(lim, 'no se encuentra la linea de Limitaciones sobre las bandas');
   assert.strictEqual(Number(lim[1]), total,
     'Limitaciones dice ' + lim[1] + ' bandas y hay ' + total);
@@ -1460,43 +1460,43 @@ prueba('el recuento de alcalinófilas de la Metodología es el real', () => {
   const txt = TEXTO();
   const ac = A.SPECIES.filter(s => s.alcalinofila).length;
 
-  // OJO con partir por punto: el texto dice «\u00f3ptimo 7,6 con meseta de \u00b11,4,
+  // OJO con partir por punto: el texto dice «óptimo 7,6 con meseta de ±1,4,
   // suelo 0,60.» y ese punto es decimal, no el fin de la frase. Con dos
   // decimales en la misma linea no hay forma de saber por donde cortar sin
   // liarse. Asi que no se parte: se busca directamente la DIRECCION del
   // recuento, que es lo unico que hace falta comprobar.
   const NUMEROS = /uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|\d+/;
   const cuenta = [...txt.matchAll(new RegExp(
-    'Alcalin\\u00f3filas[^;]{0,140}?(?:Son (?:las )?|\\s)(' + NUMEROS.source + ')\\s*:', 'gi'))]
+    'Alcalin\ófilas[^;]{0,140}?(?:Son (?:las )?|\\s)(' + NUMEROS.source + ')\\s*:', 'gi'))]
     .map(m => ({ texto: m[0].trim(), n: numeroDe(m[1]) }));
 
   assert.ok(cuenta.length >= 2,
-    'se esperaban los dos recuentos de alcalin\u00f3filas y se hallaron ' + cuenta.length
+    'se esperaban los dos recuentos de alcalinófilas y se hallaron ' + cuenta.length
     + ' (' + JSON.stringify(cuenta.map(c => c.texto)) + ')');
 
   for (const c of cuenta) {
     assert.ok(c.n > 0 && c.n < 11, 'no se sabe leer el recuento de: ' + JSON.stringify(c.texto));
     assert.strictEqual(c.n, ac,
-      'la Metodologia cuenta ' + c.n + ' alcalin\u00f3filas y hay ' + ac
-      + ' (en \u00ab' + c.texto.slice(0, 70) + '\u00bb)');
+      'la Metodologia cuenta ' + c.n + ' alcalinófilas y hay ' + ac
+      + ' (en «' + c.texto.slice(0, 70) + '»)');
   }
 
   // Los bloques completos, para comprobar los nombres que se citan. Para el
   // recorte se usa el HTML crudo y las etiquetas se quitan despues: en TEXTO()
   // ya no queda ningun «</li>» donde cortar.
-  const bloques = [...NUM().matchAll(/Alcalin\u00f3filas[\s\S]{0,400}?<\/li>/g)]
+  const bloques = [...NUM().matchAll(/Alcalinófilas[\s\S]{0,400}?<\/li>/g)]
     .map(m => m[0].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim());
   assert.ok(bloques.length >= 2,
     'no se han localizado los dos bloques de texto (' + bloques.length + ')');
 
   for (const sp of A.SPECIES.filter(s => s.alcalinofila)) {
-    const alias = (sp.alias || '').split(' \u00b7 ')[0];
+    const alias = (sp.alias || '').split(' · ')[0];
     const nombres = [sp.es, alias]
       .filter(Boolean)
       .map(n => n.toLowerCase().replace(' / ', ' '));
     const aparece = nombres.some(n => bloques.some(b => b.toLowerCase().includes(n)));
     assert.ok(aparece,
-      sp.key + ' es alcalin\u00f3fila pero no se nombra en la lista de la Metodologia');
+      sp.key + ' es alcalinófila pero no se nombra en la lista de la Metodologia');
   }
 });
 
@@ -1585,7 +1585,7 @@ prueba('la ficha del marzuelo no rompe el reparto termico que se documenta', () 
 
   // No puede estar ademas en el bloque de otoño o el de termofilas, que se
   // definen por rangos que el marzuelo no cumple.
-  const otono = txt.match(/Especies de oto\u00f1o[\s\S]{0,200}/);
+  const otono = txt.match(/Especies de otoño[\s\S]{0,200}/);
   assert.ok(otono, 'no se encuentra el bloque de especies de otoño');
   assert.ok(!/marzuel/i.test(otono[0]), 'el marzuelo esta tambien en el bloque de otoño');
 });
@@ -1919,8 +1919,8 @@ prueba('los diez apartados siguen ahí y en orden', () => {
     'la Metodología tiene ' + titulos.length + ' apartados; se esperaban 10');
 
   for (let i = 0; i < 10; i++) {
-    assert.ok(titulos[i].startsWith((i + 1) + ' \u00b7 '),
-      'el apartado ' + (i + 1) + ' dice \u00ab' + titulos[i] + '\u00bb;'
+    assert.ok(titulos[i].startsWith((i + 1) + ' · '),
+      'el apartado ' + (i + 1) + ' dice «' + titulos[i] + '»;'
       + ' se esperaba que empiece por «' + (i + 1) + ' · »');
   }
 });
@@ -1956,7 +1956,7 @@ prueba('el texto de la Metodología es el mismo que antes', () => {
   ];
   for (const [aguja, porque] of needles) {
     assert.ok(texto.includes(aguja),
-      'ya no aparece \u00ab' + aguja + '\u00bb en la Metodología (' + porque + ')');
+      'ya no aparece «' + aguja + '» en la Metodología (' + porque + ')');
   }
 
   // Y que la tarjeta no sea una maraña de espacios: el Interior venia
@@ -2083,11 +2083,11 @@ prueba('ningún icono es un cuadrado ni otra figura que no sea un punto', () => 
     '\u{1F7EA}': 'cuadrado morado grande',
     '\u{1F7EB}': 'cuadrado marrón grande',
     '\u{1F7EF}': 'cuadrado blanco grande',
-    '\u2B1B': 'cuadrado negro grande',
-    '\u2B1C': 'cuadrado blanco grande',
-    '\u25A0': 'cuadrado negro geométrico',
-    '\u2744': 'copo de nieve',
-    '\u2B1A': 'cuadrado negro pequeño',
+    '⬛': 'cuadrado negro grande',
+    '⬜': 'cuadrado blanco grande',
+    '■': 'cuadrado negro geométrico',
+    '❄': 'copo de nieve',
+    '⬚': 'cuadrado negro pequeño',
   };
 
   // Y la lista buena, para comprobar que hay circulos de verdad y no solo que
@@ -2095,7 +2095,7 @@ prueba('ningún icono es un cuadrado ni otra figura que no sea un punto', () => 
   const permitidos = [
     '\u{1F7E0}', '\u{1F7E1}', '\u{1F7E2}', '\u{1F7E3}', '\u{1F7E4}',
     '\u{1F534}', '\u{1F535}', '\u{1F536}', '\u{1F537}',
-    '\u26AA', '\u26AB', '\u25CF', '\u25CB',
+    '⚪', '⚫', '●', '○',
   ];
 
   // Solo el bloque de iconos, no el fichero entero: un cuadrado puede
@@ -2263,7 +2263,7 @@ prueba('el vocabulario del MFE no se solapa con el de la capa de usos', () => {
   const capasDeMonteBajo = ['madronales', 'enebrales', 'fayal_brezal'];
 
   for (const [codigo, regla] of Object.entries(H_.MFE_USO_TAGS)) {
-    assert.ok(codigo && /^[A-Za-z\u00C0-\u017F ()\-]+$/.test(codigo),
+    assert.ok(codigo && /^[A-Za-zÀ-ſ ()\-]+$/.test(codigo),
       'el codigo LULUCF tiene caracteres raros: ' + codigo);
     assert.ok(regla.tag && /^[a-z_]+$/.test(regla.tag),
       'el tag no parece un identificador del motor: ' + regla.tag);
@@ -2449,7 +2449,7 @@ prueba('el veto trae la etiqueta que lo explica', () => {
   // Un 0 sin explicacion parece un fallo de la aplicacion, no una decision.
   const A_ = require('./algoritmo.js');
   const r = A_.evaluarHabitat(A_.SPECIES[0], { vegetacion: ['__nada_real__'] });
-  assert.strictEqual(r.etiqueta, 'fuera de su h\u00e1bitat');
+  assert.strictEqual(r.etiqueta, 'fuera de su hábitat');
   assert.ok(r.etiqueta && r.etiqueta.length > 3);
 });
 
@@ -2462,7 +2462,7 @@ prueba('el veto llega al detalle que se pinta en la tarjeta', () => {
   const bien = A_.indice(sp, ctx({ veg: ['pinar'] }));
   assert.strictEqual(mal.detalle.habFactor, 0);
   assert.strictEqual(mal.detalle.habVeto, true);
-  assert.strictEqual(mal.detalle.habEtiqueta, 'fuera de su h\u00e1bitat');
+  assert.strictEqual(mal.detalle.habEtiqueta, 'fuera de su hábitat');
   assert.ok(mal.I < bien.I, 'en un habitat ajeno no puede puntuar mas');
   assert.strictEqual(bien.detalle.habVeto, false);
 });
@@ -3037,7 +3037,7 @@ prueba('el veto se explica en Especies y en la tarjeta, sin interruptor', () => 
   // nada.
   const ch = src.match(/sel\.querySelectorAll\('input'\)[\s\S]{0,2000}?\}\)\);/);
   assert.ok(ch, 'no se encuentra el manejador de las casillas');
-  assert.ok(/marcaVetada\(sp, cb\.checked\)/.test(ch[0]),
+  assert.ok(/marcaVetada\(k, cb\.checked\)/.test(ch[0]),
     'marcar una vetada no la registra: la casilla se movería y no pasaría nada');
 
   // Y la tarjeta lleva el aviso.
@@ -3078,7 +3078,7 @@ grupo('26. El número de versión existe y está bien escrito');
 // número que mueve una predicción sube el primero. Aquí se comprueba que el
 // número está donde tiene que estar y que no se ha roto.
 
-const VERSION = 'v2.4';
+const VERSION = 'v2.5';
 
 prueba('el número de versión está debajo del lema, en la cabecera', () => {
   const html = require('fs').readFileSync('index.html', 'utf8');
@@ -3412,6 +3412,111 @@ prueba('la fila vetada se pinta en gris, nunca en rojo', () => {
   }
   assert.ok(/opacity/.test(bloque[0]),
     'la fila vetada debería atenuarse, como la opción vetada del selector');
+});
+
+grupo('29. Activar una especie vetada la mete en el dashboard');
+
+// Este grupo existe por un bug real. `marcaVetada` guardaba el OBJETO de la
+// ficha en el conjunto y `esVisible` buscaba la CLAVE, así que nunca
+// coincidieron: marcar una vetada no hacía nada y parecía que el botón estuviese
+// muerto. Los tests de antes no lo pillaron porque comprobaban que cada línea
+// existiera, no que las dos halves hablaran el mismo idioma.
+
+/**
+ * Saca del app.js las tres piezas del mecanismo de las vetadas marcadas, tal
+ * cual, y devuelve una copia de cada una con su conjunto independiente.
+ */
+function mecanismoVetadasDesdeAppJs() {
+  const src = require('fs').readFileSync('app.js', 'utf8');
+  const decl = src.match(/let vetadasMarcadas = new Set\(\);/);
+  const fnEs = src.match(/function esVisible\(r\)[\s\S]*?\n\}/);
+  const fnMarca = src.match(/function marcaVetada\([^)]*\)[\s\S]*?\n\}/);
+  assert.ok(decl, 'no se encuentra `let vetadasMarcadas`');
+  assert.ok(fnEs, 'no se encuentra esVisible()');
+  assert.ok(fnMarca, 'no se encuentra marcaVetada()');
+
+  // Se montan en el mismo ámbito para que compartan el conjunto, que es
+  // justo lo que hacia el código real: si se compilaran por separado, el
+  // conjunto de una no sería el de la otra y el test pasaría sin comprobar nada.
+  const cuerpo = new Function(decl[0] + '\n' + fnEs[0] + '\n' + fnMarca[0]
+    + '\nreturn { esVisible, marcaVetada, set: vetadasMarcadas };');
+  return cuerpo();
+}
+
+prueba('marcar una vetada la hace visible, y la clave es la misma en las dos', () => {
+  const m = mecanismoVetadasDesdeAppJs();
+
+  // OJO: 'morena' es la clave de la colmenilla. 'colmenilla' es el nombre
+  // en español y no existe como clave, así que el test fallaba al pedirla.
+  const species = A.SPECIES.find((s) => s.key === 'morena');
+  assert.ok(species, 'no se encuentra la ficha de morena');
+
+  // `esVisible()` lee `r.sp.key`, así que la entrada lleva la FICHA en `sp`.
+  // Con un envoltorio de más, `r.sp.key` salía undefined y el conjunto no
+  // encontraba nada: el test fallaba por él, no por el código.
+  const entrada = (vetos) => ({ sp: species, detalle: { vetos } });
+
+  // Sin marcar, no sale. Es lo que hace que las 4 vetadas de octubre no llenen
+  // el panel solo por venir marcadas en la lista.
+  assert.strictEqual(m.esVisible(entrada(['temporada'])), false,
+    'una vetada de la lista de por defecto sale sin que la marques');
+
+  // Una especie sin veto sale siempre, marcada o no.
+  assert.strictEqual(m.esVisible(entrada([])), true);
+
+  // Y al marcarla, sale. ESTE era el bug: no salía nunca.
+  m.marcaVetada(species.key, true);
+  assert.strictEqual(m.esVisible(entrada(['temporada'])), true,
+    'marcar la vetada no la ha hecho visible: la clave que guarda una no es la '
+    + 'que busca la otra');
+
+  // Volver a desmarcarla la esconde otra vez.
+  m.marcaVetada(species.key, false);
+  assert.strictEqual(m.esVisible(entrada(['temporada'])), false,
+    'desmarcar una vetada no la vuelve a esconder');
+});
+
+prueba('lo que guarda marcaVetada es lo mismo que lo que busca esVisible', () => {
+  // El bug anterior pasó porque uno guardaba un objeto y el otro buscaba
+  // una cadena. Se comprueba el tipo de lo que hay dentro del conjunto.
+  const m = mecanismoVetadasDesdeAppJs();
+
+  const species = A.SPECIES[0];
+  m.marcaVetada(species.key, true);
+
+  assert.strictEqual(m.set.size, 1, 'el conjunto debería tener un elemento');
+  const guardado = [...m.set][0];
+  assert.strictEqual(typeof guardado, 'string',
+    'lo guardado es un ' + typeof guardado + ' (' + JSON.stringify(guardado)
+    + ') y esVisible() busca una clave, que es texto');
+  assert.strictEqual(guardado, species.key,
+    'la clave guardada no es la de la ficha: ' + guardado + ' contra ' + species.key);
+});
+
+prueba('cada especie se registra por su propia clave, sin colisiones', () => {
+  const m = mecanismoVetadasDesdeAppJs();
+
+  const a = A.SPECIES[0];
+  const b = A.SPECIES[5];
+  m.marcaVetada(a.key, true);
+
+  const visA = (k) => m.esVisible({ sp: { key: k }, detalle: { vetos: ['temporada'] } });
+  assert.strictEqual(visA(a.key), true, 'la marcada tiene que salir');
+  assert.strictEqual(visA(b.key), false, 'una especie vetada que no se ha marcado no sale');
+  assert.strictEqual(m.set.size, 1, 'se ha registrado algo de más');
+});
+
+prueba('el manejador pasa la clave, no la ficha', () => {
+  // El otro mitad del bug: el manejador pasaba `sp` y la función guardaba lo
+  // que recibiera. Si se pasa la ficha, vuelve a guardarse un objeto.
+  const src = require('fs').readFileSync('app.js', 'utf8');
+  const ch = src.match(/sel\.querySelectorAll\('input'\)[\s\S]{0,2000}?\}\)\);/);
+  assert.ok(ch, 'no se encuentra el manejador de las casillas');
+  assert.ok(/marcaVetada\(k, cb\.checked\)/.test(ch[0]),
+    'el manejador no pasa la clave: ' +
+    (ch[0].match(/marcaVetada\([^)]*\)/) || [''])[0]);
+  assert.ok(!/marcaVetada\(sp/.test(ch[0]),
+    'el manejador sigue pasando la ficha en lugar de la clave');
 });
 
 cola.then(() => {

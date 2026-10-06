@@ -828,9 +828,18 @@ function esVisible(r) {
 }
 
 /** El usuario ha marcado (o desmarcado) una especie vetada. */
-function marcaVetada(sp, marcada) {
-  if (marcada) vetadasMarcadas.add(sp);
-  else vetadasMarcadas.delete(sp);
+/**
+ * El usuario ha marcado (o desmarcado) una especie vetada.
+ *
+ * OJO: guarda la CLAVE, no el objeto de la ficha. Antes guardaba `sp` y
+ * consultaba con `r.sp.key`, así que el conjunto contenía objetos y se buscaba
+ * una cadena: nunca coincidía y marcar una vetada no hacía nada. Los tests no
+ * lo pillaron porque comprobaban que cada línea existiera, no que las dos
+ * halves hablan el mismo idioma.
+ */
+function marcaVetada(clave, marcada) {
+  if (marcada) vetadasMarcadas.add(clave);
+  else vetadasMarcadas.delete(clave);
 }
 
 /**
@@ -1579,9 +1588,8 @@ function refreshMushroomSelector() {
     // Una especie vetada que se marca o se desmarca queda registrada aparte.
     // Sin esto, marcarla no cambiaría nada: `esVisible()` la seguiría ocultando
     // porque el veto manda sobre `selectedMushrooms`.
-    const sp = SPECIES.find(x => x.key === k);
     const r = currentRanking?.find(x => x.sp.key === k);
-    if (sp && r && r.detalle.vetos.length) marcaVetada(sp, cb.checked);
+    if (r && r.detalle.vetos.length) marcaVetada(k, cb.checked);
 
     cb.closest('.mushroom-option').classList.toggle('selected', cb.checked);
     saveSelectedMushrooms();
