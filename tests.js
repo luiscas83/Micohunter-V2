@@ -2983,7 +2983,7 @@ grupo('26. El número de versión existe y está bien escrito');
 // número que mueve una predicción sube el primero. Aquí se comprueba que el
 // número está donde tiene que estar y que no se ha roto.
 
-const VERSION = 'v2.1';
+const VERSION = 'v2.2';
 
 prueba('el número de versión está debajo del lema, en la cabecera', () => {
   const html = require('fs').readFileSync('index.html', 'utf8');
@@ -3133,15 +3133,19 @@ prueba('el veto de temporada se suma a los otros dos sin pisarlos', () => {
 });
 
 prueba('la app sabe pintar el motivo del veto de temporada', () => {
-  // El selector de Especies traduce cada motivo a texto. Sin esta linea, el
-  // veto nuevo caia en el `else` y se pintaba como «pH fuera de rango».
+  // Los tres motivos salen de UNA tabla, `MOTIVO_VETO`, que usan el selector de
+  // Especies y la tabla de Análisis. Sin la entrada de temporada, el veto nuevo
+  // cairía en el texto generico y no se distinguiría de los otros dos.
   const app = require('fs').readFileSync('app.js', 'utf8');
-  const m = app.match(/\.map\(v => v === 'habitat'[\s\S]{0,220}?\.join/);
-  assert.ok(m, 'no se encuentra el mapa de motivos del veto en app.js');
-  assert.ok(/fuera de temporada/.test(m[0]),
+  const m = app.match(/const MOTIVO_VETO = \{[\s\S]{0,400}?\};/);
+  assert.ok(m, 'no se encuentra MOTIVO_VETO en app.js');
+  assert.ok(/temporada: 'Fuera de temporada'/.test(m[0]),
     'el veto «temporada» no tiene su propio texto: '
-    + 'caeria en el else y se pintaria como «pH fuera de rango»');
-  assert.ok(/pH fuera de rango/.test(m[0]), 'el veto de suelo ha perdido su texto');
+    + 'caeria en el generico y no se distinguiría de los otros');
+  assert.ok(/habitat: 'Fuera de su hábitat'/.test(m[0]),
+    'el veto de habitat ha perdido su texto');
+  assert.ok(/suelo: 'pH fuera de rango'/.test(m[0]),
+    'el veto de suelo ha perdido su texto');
 });
 
 prueba('las 19 ventanas de temporada estan completas y son meses de verdad', () => {
@@ -3173,6 +3177,146 @@ prueba('enero se queda sin ninguna especie, y es un hecho del modelo', () => {
     'enero tiene ' + enero + ' especies en temporada. Antes eran 0. '
     + 'Si ha cambiado, hay que actualizar el aviso de la Metodologia, que dice '
     + 'que en enero no sale ninguna.');
+});
+
+grupo('28. La tabla de Análisis explica los ceros por veto');
+
+// Un veto deja `viable: true` y `motivo: null`: el veto no es «no se puede
+// evaluar», es «no crece aquí». Por eso la columna de nivel de la tabla de
+// Análisis decía «Desfavorable» y el 0 salía sin explicación, que parece un
+// fallo de la aplicación. Lo que vigila este grupo es que la fila diga POR QUÉ.
+
+/**
+ * Saca `motivoDeVeto` de app.js y lo devuelve como función.
+ *
+ * NO se puede con `eval`: tests.js está en 'use strict', y lo declarado dentro
+ * de un `eval` en modo estricto vive en el ámbito del propio `eval`, no fuera.
+ * Se comprobó: los tests de este grupo fallaban con «motivoDeVeto is not
+ * defined» justo después de copiar el código tal cual de app.js.
+ * `new Function` monta el cuerpo en su propio ámbito y devuelve lo que se le pida.
+ */
+function motivoDeVetoDesdeAppJs() {
+  const app = require('fs').readFileSync('app.js', 'utf8');
+  const defs = app.match(/const MOTIVO_VETO = \{[\s\S]*?\n\};/);
+  const fn = app.match(/function motivoDeVeto\(entrada\)[\s\S]*?\n\}/);
+  assert.ok(defs, 'no se encuentra MOTIVO_VETO en app.js');
+  assert.ok(fn, 'no se encuentra motivoDeVeto() en app.js');
+  return new Function(defs[0] + '\n' + fn[0] + '\nreturn motivoDeVeto;')();
+}
+
+function tablaMotivosDesdeAppJs() {
+  const app = require('fs').readFileSync('app.js', 'utf8');
+  const defs = app.match(/const MOTIVO_VETO = \{[\s\S]*?\n\};/);
+  assert.ok(defs, 'no se encuentra MOTIVO_VETO en app.js');
+  return new Function(defs[0] + '\nreturn MOTIVO_VETO;')();
+}
+
+prueba('motivoDeVeto da texto a cada veto y nada si no hay', () => {
+  const mv = motivoDeVetoDesdeAppJs();
+
+  assert.strictEqual(mv({ detalle: { vetos: [] } }), '');
+  assert.strictEqual(mv({ detalle: { vetos: ['temporada'] } }), 'Fuera de temporada');
+  assert.strictEqual(mv({ detalle: { vetos: ['habitat'] } }), 'Fuera de su hábitat');
+  assert.strictEqual(mv({ detalle: { vetos: ['suelo'] } }), 'pH fuera de rango');
+  // Dos motivos a la vez van separados por el punto medio, no por «y»: en la
+  // tabla es una celda corta y «y» se leia como una frase.
+  assert.strictEqual(mv({ detalle: { vetos: ['habitat', 'temporada'] } }),
+    'Fuera de su hábitat · Fuera de temporada');
+
+  // Sin entrada, o sin la lista, no revienta: cadena vacía, no un error.
+  assert.strictEqual(mv(null), '');
+  assert.strictEqual(mv(undefined), '');
+  assert.strictEqual(mv({}), '');
+  assert.strictEqual(mv({ detalle: {} }), '');
+  // Y un veto que el motor todavía no emita tampoco rompe la tabla.
+  assert.ok(mv({ detalle: { vetos: ['nuevo'] } }).length > 0,
+    'un motivo desconocido se queda sin texto');
+});
+
+prueba('la tabla de motivos y el motor dicen lo mismo', () => {
+  // Un motivo declarado que el motor nunca emite es texto muerto; un veto que
+  // el motor emite y no está declarado deja la tabla con un 0 a secas. Es
+  // exactamente el bug que motivó este grupo, así que se comprueba en las dos
+  // direcciones y sobre las 19 especies x 12 meses x 3 pH x 3 hábitats.
+  const MOTIVO_VETO = tablaMotivosDesdeAppJs();
+
+  const vistos = new Set();
+  for (const sp of A.SPECIES) {
+    const perfil = sp.pHTolerante ? 5.6 : sp.acidofilo ? 5.2 : sp.alcalinofila ? 7.6 : 6.8;
+    for (const mes of [1, 6, 10]) {
+      for (const ph of [perfil, 5.0, 7.8]) {
+        for (const veg of [[sp.habitat[0]], ['pinar'], []]) {
+          const r = A.indice(sp, ctx({ mes, ph, veg }));
+          r.detalle.vetos.forEach((v) => vistos.add(v));
+        }
+      }
+    }
+  }
+
+  const emitidos = [...vistos].sort();
+  const declarados = Object.keys(MOTIVO_VETO).sort();
+  assert.deepStrictEqual(emitidos, declarados,
+    'el motor emite ' + JSON.stringify(emitidos) + ' y la tabla declara '
+    + JSON.stringify(declarados) + ': tienen que coincidir exactamente');
+  for (const v of declarados) {
+    assert.ok(MOTIVO_VETO[v] && MOTIVO_VETO[v].length > 3, v + ' sin texto');
+  }
+});
+
+prueba('la fila vetada dice POR QUÉ y no el baremo de niveles', () => {
+  const app = require('fs').readFileSync('app.js', 'utf8');
+  const fn = app.match(/function renderAnalisis\(\)[\s\S]*?\n\}/);
+  assert.ok(fn, 'no se encuentra renderAnalisis() en app.js');
+  const cuerpo = fn[0];
+
+  assert.ok(/const vetos = r\.detalle\.vetos/.test(cuerpo),
+    'renderAnalisis() no lee detalle.vetos: los ceros volverían a salir sin explicar');
+  // El veto tiene que ir ANTES de la rama de viable, que para un veto es true.
+  assert.ok(/vetos\.length\s*\n\s*\? motivoDeVeto\(r\)/.test(cuerpo),
+    'el veto no tiene prioridad sobre la rama de viable');
+  // Y la celda no puede ser la de antes.
+  assert.ok(!/\$\{r\.viable \? n\.texto : `[^`]*\$\{r\.motivo\}/.test(cuerpo),
+    'la celda de nivel sigue siendo la de antes, sin motivo de veto');
+  // La fila se marca para poder atenuarla.
+  assert.ok(/row-vetada/.test(cuerpo), 'la fila vetada no lleva la clase row-vetada');
+  assert.ok(/indice-badge \$\{vetos\.length \? 'vetada' : n\.clase\}/.test(cuerpo),
+    'el 0 de una fila vetada debería llevar su propio distintivo, no el de «Desfavorable»');
+});
+
+prueba('la tabla de Análisis sigue mostrando las 19, vetadas incluidas', () => {
+  // Filtrarlas sería el error opuesto: el veto no borra la especie del modelo,
+  // le pone un 0 con motivo.
+  const app = require('fs').readFileSync('app.js', 'utf8');
+  const fn = app.match(/function renderAnalisis\(\)[\s\S]*?\n\}/);
+  assert.ok(fn, 'no se encuentra renderAnalisis() en app.js');
+  assert.ok(/currentRanking\.map/.test(fn[0]),
+    'la tabla ya no se pinta desde el ranking completo');
+  assert.ok(!/currentRanking[\s\S]{0,120}?filter\(/.test(fn[0]),
+    'la tabla está filtrando el ranking: las vetadas no deben desaparecer');
+});
+
+prueba('la fila vetada se pinta en gris, nunca en rojo', () => {
+  // El rojo está reservado a las setas tóxicas. Un 0 por veto es un dato, no
+  // una alarma.
+  const css = require('fs').readFileSync('styles.css', 'utf8');
+  const bloque = css.match(/\.ranking-table tbody tr\.row-vetada \{[\s\S]*?\n?\}/);
+  assert.ok(bloque, 'no existe .row-vetada en el CSS');
+
+  // El rojo se busca mirando los canales, no la letra del hexadecimal: un gris
+  // como #f4f2ee empieza por «f» y un detector por regex lo daría por rojo.
+  const hexes = [...bloque[0].matchAll(/#([0-9a-f]{6})/gi)].map((m) => m[1]);
+  assert.ok(hexes.length > 0,
+    'la fila vetada no declara ningún color propio');
+  for (const h of hexes) {
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    const rojo = r - Math.max(g, b);
+    assert.ok(rojo <= 12, 'color rojizo en la fila vetada: #' + h
+      + ' (el rojo gana por ' + rojo + ' a los otros canales)');
+  }
+  assert.ok(/opacity/.test(bloque[0]),
+    'la fila vetada debería atenuarse, como la opción vetada del selector');
 });
 
 cola.then(() => {

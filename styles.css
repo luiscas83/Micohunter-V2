@@ -1834,6 +1834,27 @@ body {
     background: #fbf6ec;
 }
 
+/* Fila de una especie vetada en la tabla de Análisis. Se atenúa igual que la
+   opción vetada del selector, y en gris: el rojo está reservado a las setas
+   tóxicas y un 0 por veto no es una advertencia, es un dato. */
+.ranking-table tbody tr.row-vetada {
+    background: #f4f2ee;
+    opacity: 0.72;
+}
+
+.ranking-table tbody tr.row-vetada .col-nivel {
+    font-size: 0.8rem;
+    line-height: 1.3;
+    color: var(--gris-medio-texto, #8a8a84);
+}
+
+/* El 0 de una fila vetada no es un nivel del baremo: por eso lleva su propio
+   distintivo y no el de «Desfavorable», que significaría «poco probable». */
+.indice-badge.vetada {
+    background: #dedad0;
+    color: #6f6252;
+}
+
 .col-especie {
     display: flex;
     align-items: center;

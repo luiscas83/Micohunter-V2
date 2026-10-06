@@ -825,6 +825,27 @@ function renderTarjetas() {
  * El verbo concuerda con su propio número: «1 está fuera de su hábitat» y no
  * «1 están».
  */
+/**
+ * Los motivos de veto de UNA especie, en texto y sin recuento.
+ *
+ * Vive aparte de `motivosDeVeto`, que cuenta y redacta la frase con «N están…».
+ * Aquí lo que se necesita es el rótulo corto de una fila: «Fuera de
+ * temporada». Los dos leen la misma lista, `detalle.vetos`, así que un veto
+ * nuevo obliga a tocar esta tabla en un solo sitio.
+ */
+const MOTIVO_VETO = {
+  habitat: 'Fuera de su hábitat',
+  suelo: 'pH fuera de rango',
+  temporada: 'Fuera de temporada',
+};
+
+function motivoDeVeto(entrada) {
+  if (!entrada?.detalle?.vetos?.length) return '';
+  return entrada.detalle.vetos
+    .map(v => MOTIVO_VETO[v] || 'Fuera de las condiciones del punto')
+    .join(' · ');
+}
+
 function motivosDeVeto(entradas) {
   const cuenta = { habitat: 0, suelo: 0, temporada: 0 };
   for (const r of entradas) {
@@ -1035,13 +1056,22 @@ function renderAnalisis() {
     const sp = r.sp;
     const m = MUSHROOM_META[sp.key] || {};
     const n = nivelTexto(r.I);
+    // Una especie vetada tiene `viable: true` y `motivo: null`: el veto no es
+    // «no se puede evaluar», es «no crece aquí». Por eso la columna decía
+    // «Desfavorable» y el 0 salía sin explicación, que parece un fallo. Ahora la
+    // fila se pinta en gris y la columna dice POR QUÉ, que es lo que el veto
+    // significa.
+    const vetos = r.detalle.vetos;
+    const celdaNivel = vetos.length
+      ? motivoDeVeto(r)
+      : r.viable ? n.texto : `— (${r.motivo})`;
     return `
-    <tr class="${r.I >= 45 ? 'row-alta' : ''}">
+    <tr class="${r.I >= 45 ? 'row-alta' : ''}${vetos.length ? ' row-vetada' : ''}">
       <td class="col-especie">
         <span class="sp-icon">${m.icon || '🍄'}</span>
         <div><strong>${sp.es}</strong><div class="sp-latin">${sp.lat}</div></div>
       </td>
-      <td class="col-indice"><span class="indice-badge ${n.clase}">${Math.round(r.I)}</span></td>
+      <td class="col-indice"><span class="indice-badge ${vetos.length ? 'vetada' : n.clase}">${Math.round(r.I)}</span></td>
       <td title="Estacional (T suelo)">${pct(r.S)}%</td>
       <td title="Reserva de humedad del suelo">${pct(r.H)}%</td>
       <td title="Acumulación de grados día">${pct(r.A)}%</td>
@@ -1051,7 +1081,7 @@ function renderAnalisis() {
       <td title="Temp. óptima">${sp.tOpt}°C</td>
       <td title="Compatibilidad de hábitat (estimada)">${pct(r.detalle.habFactor)}%</td>
       <td title="${escaparHtml(textoHelada(r.detalle))}">${pct(r.detalle.heladaFactor)}%</td>
-      <td class="col-nivel">${r.viable ? n.texto : `— (${r.motivo})`}</td>
+      <td class="col-nivel"${vetos.length ? ` title="${escaparHtml(motivoDeVeto(r))}"` : ''}>${celdaNivel}</td>
     </tr>`;
   }).join('');
 
@@ -1473,11 +1503,7 @@ function refreshMushroomSelector() {
     const on = selectedMushrooms.includes(sp.key);
     const vetada = vetadas.has(sp.key);
     const r = currentRanking?.find(x => x.sp.key === sp.key);
-    const motivo = r ? r.detalle.vetos
-      .map(v => v === 'habitat' ? 'fuera de su hábitat'
-        : v === 'suelo' ? 'pH fuera de rango'
-        : 'fuera de temporada')
-      .join(' y ') : '';
+    const motivo = r ? motivoDeVeto(r) : '';
     return `
       <label class="mushroom-option ${on ? 'selected' : ''}${sp.toxica ? ' toxica' : ''}${vetada && !mostrarVetadas ? ' vetada' : ''}">
         <input type="checkbox" value="${sp.key}" ${on ? 'checked' : ''}>
