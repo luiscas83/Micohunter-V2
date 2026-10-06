@@ -20,6 +20,36 @@
       <div>
         <h1>MicoHunter</h1>
         <p class="tagline">Potencial de fructificación por especie, suelo y clima</p>
+        <!--
+          EL NÚMERO DE VERSIÓN
+          =================
+          Empieza en 1.0 y sube un número cada vez que se cambia algo. No es
+          decorativo: sirve para saber CON QUÉ VERSIÓN se ha hecho una captura,
+          o para confirmar que el navegador está enseñando la última.
+
+          DECIDIR QUÉ ES "UN CAMBIO":
+          - Cambia la MENSAJE en mayúsculas: cambio menor, sube el segundo.
+          - Cambia un NÚMERO que altera una predicción: sube el primero. El
+            número que se ve es un segundo, y una predicción que se mueve un
+            segundo no merece pasar por versión nueva.
+
+          CÓMO SE ESCRIBE:
+          - MAJOR.MINOR, los dos sin ceros: 1.0, 1.1, 1.2 … 1.9, 1.10, 2.0.
+          - Se sube aquí a mano, no automáticamente. Un número que se calcula
+            al abrir la página no sirve: abrir dos veces el mismo commit
+            daría dos números y no se sabría cuál es cuál.
+          - Sin parche, sin fecha. Una fecha obliga a tocar un segundo número
+            en cada publicación y a partir de ahí deja de Comparederse con el
+            número de versión.
+
+          El mensaje va en los comentarios de git, que es donde queda escrita
+          la razón de cada cambio. Este número dice CUÁNTO; aquél, POR QUÉ.
+
+          ESTE NÚMERO SE SUBE EN CADA CAMBIO. El 1.0 es el punto de partida, con
+          lo que había antes de que existiera. Los siguientes los sube quien
+          cambia algo, y en el mismo cambio.
+        -->
+        <p class="version" id="versionBadge" title="Versión de la aplicación">v1.0</p>
       </div>
     </div>
   </div>

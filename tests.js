@@ -2931,6 +2931,81 @@ prueba('el veto de pH aparece en el guion del selector de Especies', () => {
     'el interruptor necesita una función que redibuje sin duplicar escuchadores');
 });
 
+
+/* ------------------------------------------------------------------ */
+/* 26. El número de versión                                             */
+/* ------------------------------------------------------------------ */
+
+grupo('26. El número de versión existe y está bien escrito');
+
+// Puesto a petición del usuario: un contador que sube con cada cambio, debajo
+// del lema. Sirve para saber con qué versión se hizo una captura, o para
+// confirmar que el navegador enseña la última y no una de la caché.
+//
+// La decisión de cómo subirlo está escrita en index.html, junto al número:
+// un cambio en mayúsculas o en un texto sube el segundo, un cambio en un
+// número que mueve una predicción sube el primero. Aquí se comprueba que el
+// número está donde tiene que estar y que no se ha roto.
+
+const VERSION = 'v1.0';
+
+prueba('el número de versión está debajo del lema, en la cabecera', () => {
+  const html = require('fs').readFileSync('index.html', 'utf8');
+  const iLema = html.indexOf('Potencial de fructificación por especie');
+  const iVer = html.indexOf('id="versionBadge"');
+  assert.ok(iLema > 0, 'el lema no está en el HTML');
+  assert.ok(iVer > 0, 'el número de versión no está en el HTML');
+  assert.ok(iVer > iLema, 'el número tiene que ir DESPUÉS del lema');
+  // Y dentro del <header>, no suelto por el documento.
+  const iHeader = html.indexOf('<header');
+  const iFinHeader = html.indexOf('</header>');
+  assert.ok(iVer > iHeader && iVer < iFinHeader,
+    'el número tiene que estar dentro de la cabecera');
+});
+
+prueba('el número de versión tiene la forma MAJOR.MINOR, sin ceros delante', () => {
+  const html = require('fs').readFileSync('index.html', 'utf8');
+  const m = html.match(/id="versionBadge"[^>]*>\s*v(\d+)\.(\d+)\s*</);
+  assert.ok(m, 'no se encuentra el número de versión con su forma');
+  const [, major, minor] = m;
+  assert.strictEqual(Number(major), major * 1 + 0, 'major no es un número');
+  // Un cero delante indica que el número se rellena con ceros, que es un
+  // formato de contador automático, no de versión escrita a mano.
+  assert.strictEqual(major, String(Number(major)), 'major con ceros delante: ' + major);
+  assert.strictEqual(minor, String(Number(minor)), 'minor con ceros delante: ' + minor);
+  assert.ok(Number(major) >= 1, 'la versión empieza en 1.0');
+});
+
+prueba('la versión no se calcula al abrir la página', () => {
+  // Si el número lo hiciera el JavaScript, dos recargas del mismo commit darían
+  // dos números y no se sabría cuál es cuál. Tiene que estar escrito en el
+  // HTML, como texto.
+  const html = require('fs').readFileSync('index.html', 'utf8');
+  // El `v` de delante se captura aparte: en el badge está como texto, y lo que
+  // hay que comprobar es que dentro no haya nada más que el número.
+  const m = html.match(/id="versionBadge"[^>]*>\s*(v[\d.]+)\s*</);
+  assert.ok(m, 'el número tiene que estar escrito en el HTML, no generado');
+  assert.ok(/^v\d+\.\d+$/.test(m[1]),
+    'lo que hay dentro del badge debe ser solo vN.N: ' + m[1]);
+
+  const app = require('fs').readFileSync('app.js', 'utf8');
+  const css = require('fs').readFileSync('styles.css', 'utf8');
+  for (const [nombre, src] of [['app.js', app], ['styles.css', css]]) {
+    assert.ok(!/versionBadge[\s\S]{0,200}textContent\s*=/.test(src),
+      nombre + ' está escribiendo el número de versión: tiene que ser fijo');
+  }
+});
+
+prueba('el número de versión aparece en el análisis, que es donde se comparte', () => {
+  // No hace falta: el badge de la cabecera está en todas las pestañas. Se
+  // comprueba que no se haya escondido con el CSS en pantallas pequeñas.
+  const css = require('fs').readFileSync('styles.css', 'utf8');
+  const m = css.match(/\.version\s*\{([\s\S]*?)\}/);
+  assert.ok(m, 'la clase .version tiene que existir en el CSS');
+  assert.ok(!/display:\s*none/.test(m[1]),
+    '.version está oculto: no se vería en el móvil');
+});
+
 cola.then(() => {
   console.log('\n' + '-'.repeat(58));
   console.log(pruebas + ' pruebas, ' + fallos + ' fallos');

@@ -88,6 +88,19 @@ body {
     font-weight: 300;
 }
 
+/* El número de versión, debajo del lema.
+   Deliberadamente pequeño y gris: es una referencia para cuando hace falta, no
+   un elemento de la interfaz. Si se hiciera grande competiría con el nombre y
+   con el lema, que es lo que hay que leer. */
+.version {
+    margin: 2px 0 0;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.4px;
+    color: #8a8a84;
+    font-variant-numeric: tabular-nums;
+}
+
 /* ===== NAVIGATION ===== */
 .nav {
     display: flex;
