@@ -188,11 +188,18 @@ prueba('acidofila en su pH ideal no penaliza', () => {
   assert.strictEqual(r.etiqueta, 'pH adecuado');
 });
 
-prueba('acidofila en suelo calizo SI pierde (antes daba 1.000 igual)', () => {
+prueba('acidofila en suelo calizo VETE: no crece, no es improbable', () => {
+  // Antes este test pedía que la acidófila bajara a 0,60. Se aplicó el veto por
+  // pH a petición del usuario: una micorrícica de turba ácida en un suelo
+  // calcáreo no sale, y un 0,60 se leía como «poco probable», que es otra
+  // cosa. Ahora vale 0 y lo dice con el rango por el que sí crece.
   const r = A.factorSuelo(7.6, esp('boletus'));
-  assert.ok(r.factor < 1, 'sigue capado: ' + r.factor);
-  assert.ok(r.factor >= 0.6, 'por debajo del suelo: ' + r.factor);
-  assert.strictEqual(r.etiqueta, 'suelo demasiado calizo');
+  assert.strictEqual(r.factor, 0, 'la acidófila en calizo tiene que valer 0');
+  assert.strictEqual(r.veto, true, 'tiene que quedar marcado como veto');
+  assert.ok(/suelo demasiado calizo/.test(r.etiqueta),
+    'la etiqueta tiene que explicar el 0: ' + r.etiqueta);
+  assert.ok(/3\.7 y 6\.7/.test(r.etiqueta),
+    'la etiqueta tiene que decir el rango en el que sí crece: ' + r.etiqueta);
 });
 
 prueba('el recorrido del pH es monotono decreciente', () => {
@@ -215,10 +222,21 @@ prueba('sin pH el factor es neutro y se declara desconocido', () => {
 });
 
 prueba('pH absurdo no rompe ni sale de rango', () => {
-  for (const ph of [NaN, -3, 14, undefined, null]) {
+  // NaN, undefined y null son pH DESCONOCIDO: no vetan y devuelven 1. Un pH
+  // absurdo pero numérico (14, -3) sí está fuera de rango y veta. Las dos
+  // cosas tienen que ser verdad a la vez, y por eso van en el mismo test.
+  for (const ph of [NaN, undefined, null]) {
     const r = A.factorSuelo(ph, esp('boletus'));
     assert.ok(Number.isFinite(r.factor), 'factor no finito con ph=' + ph);
-    assert.ok(r.factor > 0 && r.factor <= 1, 'fuera de rango con ph=' + ph);
+    assert.strictEqual(r.factor, 1, 'sin pH no se penaliza: ' + r.factor);
+    assert.strictEqual(r.veto, false, 'sin pH no hay veto: ' + ph);
+    assert.strictEqual(r.conocido, false);
+  }
+  for (const ph of [-3, 14]) {
+    const r = A.factorSuelo(ph, esp('boletus'));
+    assert.ok(Number.isFinite(r.factor), 'factor no finito con ph=' + ph);
+    assert.strictEqual(r.factor, 0, 'un pH absurdo tiene que vetar: ' + ph);
+    assert.ok(r.factor >= 0 && r.factor <= 1);
   }
 });
 
@@ -678,6 +696,13 @@ prueba('la helada ya NO pone el índice a cero ni marca no viable', () => {
   for (const sp of A.SPECIES) {
     const c = ctxHel([-9, -8, -9, -7], 16);
     c.terreno.vegetacion = [sp.habitat[0]];
+    // Y en SU pH. El de `ctx()` es 5,0, que es una acidófila; con el veto por
+    // suelo las tres alcalinófilas caían a 0 y este test, que mide la helada,
+    // fallaba por el motivo equivocado.
+    const perfil = sp.pHTolerante ? 5.6 : sp.acidofilo ? 5.2
+      : sp.alcalinofila ? 7.6 : 6.8;
+    c.terreno.ph = perfil;
+    c.suelo = { ph: perfil, ok: true };
     const r = A.indice(sp, c);
     assert.strictEqual(r.viable, true, sp.key + ': viable=' + r.viable);
     assert.strictEqual(r.motivo, null, sp.key + ': motivo=' + r.motivo);
@@ -2737,6 +2762,175 @@ prueba('las medias y los instantáneos no se confunden', () => {
 
 // El resumen espera a la cola, o se imprimiría antes de que acabaran los
 // tests asíncronos y `fallos` valdría 0 siempre.
+
+/* ------------------------------------------------------------------ */
+/* 25. El veto por pH                                                   */
+/* ------------------------------------------------------------------ */
+
+grupo('25. El pH veta cuando el punto está fuera del rango de la especie');
+
+// Decisión del usuario: una especie cuyo pH de crecimiento no coincide con el
+// del punto no se calcula. Antes el suelo era 0,60 o 0,70, que se leía como
+// «poco probable», y es otra cosa: o crece o no crece.
+//
+// La ALTITUD no se veta, por decisión y por motivo, y está escrito en el
+// modelo: las bandas tienen un margen de suavizado inventado al crearlas, y
+// convertir un margen en un corte duro sería inventar el corte. Ese veto queda
+// pendiente.
+
+prueba('el rango de pH sale del perfil, no de un número escrito a mano', () => {
+  // Si el veto tuviera su propio número y la curva otro, un día el factor
+  // empezaría a decaer en un sitio y el veto cortaría en otro, sin que nada
+  // fallara. Este test compara los dos.
+  const A_ = require('./algoritmo.js');
+  for (const sp of A_.SPECIES) {
+    const p = sp.pHTolerante ? { o: 5.6, m: 3.4 }
+      : sp.acidofilo ? { o: 5.2, m: 1.5 }
+        : sp.alcalinofila ? { o: 7.6, m: 1.4 }
+          : { o: 6.8, m: 1.8 };
+    const lo = p.o - p.m, hi = p.o + p.m;
+
+    // Justo dentro del borde: factor 1, sin veto.
+    const borde = A_.factorSuelo(hi - 0.01, sp);
+    assert.strictEqual(borde.veto, false,
+      sp.key + ': en el borde superior interno no debe vetar (' + hi + ')');
+    assert.strictEqual(borde.factor, 1);
+
+    // Justo fuera: veto.
+    const fuera = A_.factorSuelo(hi + 0.01, sp);
+    assert.strictEqual(fuera.veto, true,
+      sp.key + ': fuera de ' + hi + ' debería vetar');
+    assert.strictEqual(fuera.factor, 0);
+  }
+});
+
+prueba('la alcalinófila VETE en un suelo ácido', () => {
+  // Es el caso que motivó el veto: el marzuelo «sobre suelos calizos» según
+  // Laux, en un pH 5,0. Antes salía con 0,60.
+  const A_ = require('./algoritmo.js');
+  const alcali = A_.SPECIES.find((s) => s.alcalinofila);
+  assert.ok(alcali, 'no hay ninguna especie alcalinófila');
+  const r = A_.factorSuelo(5.0, alcali);
+  assert.strictEqual(r.factor, 0, 'en pH 5,0 tiene que valer 0');
+  assert.strictEqual(r.veto, true);
+  assert.ok(/suelo demasiado ácido/.test(r.etiqueta), r.etiqueta);
+});
+
+prueba('la acidófila VETE en un suelo calizo', () => {
+  const A_ = require('./algoritmo.js');
+  const acid = A_.SPECIES.find((s) => s.acidofilo);
+  assert.ok(acid, 'no hay ninguna especie acidófila');
+  const r = A_.factorSuelo(7.8, acid);
+  assert.strictEqual(r.factor, 0, 'en pH 7,8 tiene que valer 0');
+  assert.strictEqual(r.veto, true);
+  assert.ok(/suelo demasiado calizo/.test(r.etiqueta), r.etiqueta);
+});
+
+prueba('la etiqueta del veto dice el rango en el que SÍ crece', () => {
+  // Un 0 sin explicación parece un fallo de la aplicación. Y saber el rango es
+  // lo que permite entender por qué cae una especie y no otra.
+  const A_ = require('./algoritmo.js');
+  const acid = A_.SPECIES.find((s) => s.acidofilo);
+  const r = A_.factorSuelo(7.8, acid);
+  assert.ok(/3\.7 y 6\.7/.test(r.etiqueta),
+    'la etiqueta debe llevar el rango: ' + r.etiqueta);
+  assert.deepStrictEqual(r.rango.map((x) => Number(x.toFixed(1))), [3.7, 6.7]);
+});
+
+prueba('SIN pH no hay veto, porque no saber no es que el pH sea malo', () => {
+  // El caso límite. SoilGrids puede no devolver pH, y si eso vetara, un fallo
+  // del servicio de suelo borraría las 19 especies del dashboard.
+  const A_ = require('./algoritmo.js');
+  for (const ph of [null, undefined, NaN]) {
+    const r = A_.factorSuelo(ph, A_.SPECIES[0]);
+    assert.strictEqual(r.veto, false, 'ph=' + ph + ' no puede vetar');
+    assert.strictEqual(r.factor, 1, 'ph=' + ph + ': sin pH el factor es 1');
+    assert.strictEqual(r.conocido, false);
+  }
+});
+
+prueba('ningún pH deja a cero TODAS las especies', () => {
+  // La comprobación que legitima el veto: si los rangos dejaran un hueco, en
+  // ese pH el dashboard se quedaría en blanco. Los cuatro perfiles se solapan
+  // y el níscalo, que es tolerante (2,2 a 9,0), cubre los dos extremos.
+  const A_ = require('./algoritmo.js');
+  const sinNinguna = [];
+  for (let ph = 2.2; ph <= 9.0; ph += 0.05) {
+    const n = A_.SPECIES.filter((s) => !A_.factorSuelo(ph, s).veto).length;
+    if (n === 0) sinNinguna.push(ph.toFixed(2));
+  }
+  assert.deepStrictEqual(sinNinguna, [],
+    'estos pH no dejan ninguna especie: ' + sinNinguna.join(', '));
+});
+
+prueba('en el rango real de SoilGrids siempre quedan especies', () => {
+  const A_ = require('./algoritmo.js');
+  // SoilGrids devuelve pH entre 4 y 9 aproximadamente. El mínimo del modelo
+  // tiene que ser de varias especies, no de una.
+  let minimo = 99;
+  let donde = null;
+  for (let ph = 4.5; ph <= 8.5; ph += 0.1) {
+    const n = A_.SPECIES.filter((s) => !A_.factorSuelo(ph, s).veto).length;
+    if (n < minimo) { minimo = n; donde = ph; }
+  }
+  assert.ok(minimo >= 6,
+    'el peor caso del rango real deja ' + minimo + ' especies en pH ' + donde);
+});
+
+prueba('el veto llega al detalle que pinta la tarjeta', () => {
+  const A_ = require('./algoritmo.js');
+  const acid = A_.SPECIES.find((s) => s.acidofilo);
+  const c = ctx({ veg: [acid.habitat[0]], ph: 7.8 });
+  const r = A_.indice(acid, c);
+  assert.strictEqual(r.detalle.sueloVeto, true);
+  assert.strictEqual(r.detalle.sueloFactor, 0);
+  assert.ok(r.detalle.vetos.includes('suelo'),
+    'la lista de vetos tiene que incluir «suelo»: ' + JSON.stringify(r.detalle.vetos));
+  assert.strictEqual(r.I, 0, 'el índice tiene que ser 0');
+});
+
+prueba('los dos vetos van en la misma lista, sin pisarse', () => {
+  // Una especie puede estar fuera de hábitat Y de pH. La tarjeta tiene que
+  // poder decir las dos cosas, no sólo una.
+  const A_ = require('./algoritmo.js');
+  const alcali = A_.SPECIES.find((s) => s.alcalinofila);
+  // En pinar, que no es su hábitat, y con pH 5,0, que tampoco.
+  const c = ctx({ veg: ['pinar'], ph: 5.0 });
+  const r = A_.indice(alcali, c);
+  assert.deepStrictEqual(r.detalle.vetos.sort(), ['habitat', 'suelo'],
+    'debería vetar por los dos motivos');
+});
+
+prueba('la altura NO se veta, y no se veta a propósito', () => {
+  // La banda de la amanita va de 200 a 900 con margen 400, o sea un veto a
+  // 1300 m, cuando su propia fuente dice «hasta 1500 m». Vetar sobre un margen
+  // inventado sería inventar el corte, y dejaría a la seta de cardo sin salir
+  // por encima de 800 m en todo el interior de España.
+  const A_ = require('./algoritmo.js');
+  const amanita = A_.SPECIES.find((s) => s.key === 'amanita');
+  // 2000 m: fuera de la banda, dentro de lo que dice la fuente.
+  assert.ok(A_.altitudeFactor(2000, amanita) > 0,
+    'a 2000 m la amanita no puede quedar a cero: '
+    + A_.altitudeFactor(2000, amanita));
+  const cardo = A_.SPECIES.find((s) => s.key === 'seta_cardo');
+  assert.ok(A_.altitudeFactor(1200, cardo) > 0,
+    'a 1200 m la seta de cardo no puede quedar a cero: '
+    + A_.altitudeFactor(1200, cardo));
+});
+
+prueba('el veto de pH aparece en el guion del selector de Especies', () => {
+  // Si el selector no dice el motivo, el veto esconde sin explicar.
+  const src = require('fs').readFileSync('app.js', 'utf8');
+  assert.ok(/pH fuera de rango/.test(src),
+    'el selector tiene que explicar el veto de suelo');
+  assert.ok(/fuera de su h.bitat/.test(src),
+    'el selector tiene que explicar el veto de hábitat');
+  assert.ok(/mostrarVetadas/.test(src),
+    'tiene que existir el interruptor para verlas igualmente');
+  assert.ok(/refreshMushroomSelector/.test(src),
+    'el interruptor necesita una función que redibuje sin duplicar escuchadores');
+});
+
 cola.then(() => {
   console.log('\n' + '-'.repeat(58));
   console.log(pruebas + ' pruebas, ' + fallos + ' fallos');

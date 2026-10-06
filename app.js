@@ -412,6 +412,10 @@ function aplicarDatos(m, s) {
   renderTarjetas();
   renderAnalisis();
   renderGeoselector();
+  // El selector de Especies lleva el motivo del veto de cada especie, y ese
+  // motivo depende del punto. Sin esta llamada, cambiar de ubicación dejaría
+  // las marcas de la visita anterior.
+  if (typeof refreshMushroomSelector === 'function') refreshMushroomSelector();
 
   // La ficha de suelo ya tiene su alto definitivo: el mapa se mide otra vez.
   ajustarMapa();
@@ -757,15 +761,64 @@ function renderTarjetas() {
   // Se filtra por selección y se ordena por prioridad de especie, no por
   // puntuación: el orden en el que salen las tarjetas es fijo, para que no
   // se muevan de sitio cada vez que cambia el tiempo.
-  const vis = porPrioridad(
-    currentRanking.filter(r => selectedMushrooms.includes(r.sp.key))
-  );
-  if (!vis.length) {
+  //
+  // Y se descartan las que están vetadas, por decisión del usuario. Una
+  // especie vetada no tiene aquí: tiene un 0 que el modelo ha decidido no
+  // calcular. Enseñar un anillo a cero veinte veces no informa de nada, y
+  // desplaza a las que sí tienen probabilidad.
+  //
+  // NO SE BORRA DEL MODELO. Siguen en `currentRanking` y en la tabla de
+  // Análisis, y se pueden ver con su motivo en la pestaña Especies, que es
+  // donde está el interruptor para enseñarlas.
+  const elegidas = currentRanking.filter(r => selectedMushrooms.includes(r.sp.key));
+  const vis = porPrioridad(elegidas.filter(r => !r.detalle.vetos.length));
+
+  if (!elegidas.length) {
     box.innerHTML = '<p class="placeholder-text">Selecciona setas en la pestaña 🍄 Especies</p>';
     return;
   }
 
+  if (!vis.length) {
+    const vetadas = elegidas.length;
+    box.innerHTML = `<p class="placeholder-text">Ninguna de las ${vetadas} setas seleccionadas
+      puede fructificar aquí: están fuera de su hábitat o su suelo está fuera
+      de rango. <button class="link-button" id="verVetadas">Ver por qué</button></p>`;
+    const b = document.getElementById('verVetadas');
+    if (b) b.addEventListener('click', irAEspeciesConVetadas);
+    return;
+  }
+
   box.innerHTML = vis.map(r => tarjeta(r)).join('');
+
+  // Si hay descartadas, una nota al pie que no interrumpe: dice cuántas hay y
+  // dónde verlas. Se pone aparte para que el usuario no las busque.
+  const fuera = elegidas.length - vis.length;
+  if (fuera > 0) {
+    const nota = document.createElement('p');
+    nota.className = 'placeholder-text tarjetas-nota';
+    nota.innerHTML = `+ ${fuera} de las ${elegidas.length} seleccionadas están
+      fuera de su hábitat o de su rango de pH, y no se calculan.
+      <button class="link-button" id="verVetadas2">Verlas</button>`;
+    box.appendChild(nota);
+    const b2 = document.getElementById('verVetadas2');
+    if (b2) b2.addEventListener('click', irAEspeciesConVetadas);
+  }
+}
+
+/**
+ * Lleva a la pestaña de Especies y activa el interruptor de las vetadas.
+ *
+ * Va al final de la lista de factores del análisis, que es donde el usuario
+ * puede ver el motivo sin tener que buscarlo.
+ */
+function irAEspeciesConVetadas() {
+  const cb = document.getElementById('mostrarVetadas');
+  if (cb && !cb.checked) {
+    cb.checked = true;
+    if (typeof refreshMushroomSelector === 'function') refreshMushroomSelector();
+  }
+  const sec = document.querySelector('[data-section="setas"]');
+  if (sec) sec.click();
 }
 
 /**
@@ -1312,22 +1365,81 @@ function textoHelada(d) {
   return `${Math.round(d.heladaFactor * 100)} % · ${noches}, ${cuando}${min}${suelo}`;
 }
 
+/**
+ * El interruptor de «enseñar las que están vetadas».
+ *
+ * Está DESACTIVADO por defecto, y esa es la decisión: el veto esconde especies
+ * del dashboard, y esconder sin poder mirar es tapar. Con el interruptor
+ * encendido se ven todas, con su 0 y su motivo, que es información real.
+ *
+ * `mostrarVetadas` es global y no se guarda: al recargar se vuelve al estado
+ * por defecto. Es lo que espera alguien que abre la página a mirar setas.
+ */
+let mostrarVetadas = false;
+
 function initMushroomSelector() {
   const sel = document.getElementById('mushroomSelector');
   const info = document.getElementById('mushroomInfoGrid');
   if (!sel) return;
 
+  refreshMushroomSelector();
+
+  // El interruptor se pone FUERA del contenedor que se reescribe, y se
+  // reconstruye cada vez, porque `sel.innerHTML` lo borraría.
+  if (!document.getElementById('mostrarVetadas')) {
+    const barra = document.createElement('label');
+    barra.className = 'mostrar-vetadas';
+    barra.innerHTML = `
+      <input type="checkbox" id="mostrarVetadas" ${mostrarVetadas ? 'checked' : ''}>
+      <span>Mostrar también las que no pueden fructificar aquí</span>`;
+    sel.parentNode.insertBefore(barra, sel);
+    barra.querySelector('#mostrarVetadas')
+      .addEventListener('change', (e) => {
+        mostrarVetadas = e.target.checked;
+        refreshMushroomSelector();
+      });
+  }
+}
+
+/**
+ * Vuelca el selector y las fichas.
+ *
+ * Va aparte de `initMushroomSelector` porque el interruptor tiene que poder
+ * redibujar sin volver a enganchar los escuchadores de los checkbox, que si no
+ * se acumulan: cada redibujado añadiría otro `change` al mismo input y una
+ * casilla de selección empezaría a quitarse sola.
+ */
+function refreshMushroomSelector() {
+  const sel = document.getElementById('mushroomSelector');
+  const info = document.getElementById('mushroomInfoGrid');
+  if (!sel) return;
+
+  // El veto de cada especie en el punto actual. Sin punto cargado no hay nada
+  // que vetar, y todas se ven.
+  const vetadas = new Set();
+  if (currentRanking) {
+    for (const r of currentRanking) {
+      if (r.detalle.vetos.length) vetadas.add(r.sp.key);
+    }
+  }
+
   sel.innerHTML = porPrioridad(SPECIES.map(sp => ({ sp }))).map(({ sp }) => {
     const m = MUSHROOM_META[sp.key] || {};
     const on = selectedMushrooms.includes(sp.key);
+    const vetada = vetadas.has(sp.key);
+    const r = currentRanking?.find(x => x.sp.key === sp.key);
+    const motivo = r ? r.detalle.vetos
+      .map(v => v === 'habitat' ? 'fuera de su hábitat' : 'pH fuera de rango')
+      .join(' y ') : '';
     return `
-      <label class="mushroom-option ${on ? 'selected' : ''}${sp.toxica ? ' toxica' : ''}">
+      <label class="mushroom-option ${on ? 'selected' : ''}${sp.toxica ? ' toxica' : ''}${vetada && !mostrarVetadas ? ' vetada' : ''}">
         <input type="checkbox" value="${sp.key}" ${on ? 'checked' : ''}>
         <span class="mushroom-option-icon">${m.icon || '🍄'}</span>
         <div class="mushroom-option-info">
           <div class="mushroom-option-name">${escaparHtml(sp.es)}</div>
           <div class="mushroom-option-scientific">${escaparHtml(sp.lat)}</div>
           ${sp.toxica ? '<div class="mushroom-option-tox">☠️ Tóxica</div>' : ''}
+          ${vetada ? `<div class="mushroom-option-veto">${escaparHtml(mayus(motivo))}</div>` : ''}
         </div>
       </label>`;
   }).join('');
@@ -1358,6 +1470,17 @@ function initMushroomSelector() {
           <p><strong>Grados día necesarios:</strong> ${sp.gddNeed}</p>
           <p><strong>Ventana hídrica:</strong> ${sp.L} días · óptima ${sp.Ro} mm</p>
           <p><strong>Hábitat:</strong> ${escaparHtml(sp.habitat.map(cap).join(', '))}</p>
+        <p><strong>Rango de pH:</strong> ${(() => {
+          // El rango sale de `PERFIL_PH`, que es el mismo del veto: si aquí se
+          // escribieran los números a mano podrían desincronizarse del corte.
+          const r = sp.pHTolerante ? '2,2 a 9,0'
+            : sp.acidofilo ? '3,7 a 6,7'
+              : sp.alcalinofila ? '6,2 a 9,0' : '5,0 a 8,6';
+          const p = sp.pHTolerante ? 'tolera cualquier pH'
+            : sp.acidofilo ? 'prefiere ácidos'
+              : sp.alcalinofila ? 'prefiere calizos' : 'le da igual';
+          return `${r} · ${p}`;
+        })()}</p>
           ${sp.confusion ? `<p><strong>Con qué se confunde:</strong> ${escaparHtml(mayus(sp.confusion))}</p>` : ''}
           ${sp.taxonomiaAviso ? `<p><strong>Taxonomía:</strong> ${escaparHtml(mayus(sp.taxonomiaAviso))}</p>` : ''}
         </div>

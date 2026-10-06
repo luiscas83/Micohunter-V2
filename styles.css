@@ -2648,6 +2648,74 @@ body {
     color: #b71c1c;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Especies vetadas en el punto actual
+   ─────────────────────────────────────────────────────────────────────────
+   Una especie vetada no aparece en el dashboard: el modelo ha decidido que no
+   puede fructificar ahí y no calcula. Aquí se ve POR QUÉ, y con el interruptor
+   se puede mirar igualmente.
+
+   El color NO es rojo. El rojo del cartel tóxico significa «no la comas», y
+   mezclarlo con «aquí no crece» sería usar el mismo aviso para dos cosas que
+   no tienen nada que ver. Este es gris, que es lo que corresponde a una especie
+   que simplemente no toca. */
+
+.mostrar-vetadas {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px;
+    padding: 8px 12px;
+    background: var(--gris-claro, #f4f4f2);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--gris-oscuro, #5a5a55);
+    cursor: pointer;
+}
+
+.mostrar-vetadas:hover {
+    background: var(--gris-medio, #eaeae7);
+}
+
+.mushroom-option.vetada {
+    opacity: 0.55;
+}
+
+.mushroom-option.vetada .mushroom-option-name {
+    color: var(--gris-medio-texto, #8a8a84);
+}
+
+.mushroom-option-veto {
+    margin-top: 2px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #6b6b64;
+    font-style: italic;
+}
+
+/* La nota al pie del dashboard, cuando hay species descartadas. */
+.tarjetas-nota {
+    grid-column: 1 / -1;
+    text-align: center;
+    margin: 12px 0 0;
+    font-size: 0.82rem;
+    color: var(--gris-medio-texto, #7a7a74);
+}
+
+.link-button {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: var(--verde, #2e6b4f);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.link-button:hover {
+    color: var(--verde-oscuro, #1f4c37);
+}
+
 .mushroom-alias,
 .mushroom-info-alias {
     margin: 3px 0 0;

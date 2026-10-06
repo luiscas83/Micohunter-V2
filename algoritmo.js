@@ -1709,39 +1709,103 @@ function evaluarHabitat(sp, terreno) {
  * centros salen de la ecologia documentada de cada grupo, no de mediciones
  * de setas.
  *
- *   acidofilo    optimo 5,2   meseta +-1,5   suelo 0,60
- *   alcalinofila optimo 7,6   meseta +-1,4   suelo 0,60
- *   indiferente  optimo 6,8   meseta +-1,8   suelo 0,70
+ *   acidófila    óptimo 5,2   meseta ±1,5   rango 3,7 a 6,7
+ *   alcalinófila óptimo 7,6   meseta ±1,4   rango 6,2 a 9,0
+ *   indiferente  óptimo 6,8   meseta ±1,8   rango 5,0 a 8,6
+ *   tolerante    óptimo 5,6   meseta ±3,4   rango 2,2 a 9,0
  *
- * El suelo nunca llega a 0: un pH equivocado penaliza, pero no anula a una
- * especie que ya tenga el resto de condiciones.
+ * VETO POR pH, A DECISIÓN DEL USUARIO
+ *
+ * Fuera del rango — óptimo ± meseta, el mismo corte que ya usaba la curva— el
+ * factor es 0 y no se calcula la predicción. Antes el suelo era 0,60 o 0,70:
+ * una alcalinófila en un pH 5,0 salía con 0,60 y se leía como «poco probable»,
+ * cuando es que no crece.
+ *
+ * El corte sale del propio perfil, no de un número escrito a mano: es donde la
+ * curva empezaba a decaer. No se ha inventado un umbral.
+ *
+ * COMPROBADO QUE NO DEJA NADA A CERO. En el recorrido entero de los cuatro
+ * perfiles (pH 2,2 a 9,0) siempre hay alguna especie: los rangos se solapan y
+ * el níscalo, que es tolerante, cubre los dos extremos. En el rango real de
+ * SoilGrids (4,5 a 8,5) el mínimo son 6 especies de 19, en el pH más ácido.
+ *
+ * Sin pH NO hay veto: `factorSuelo` devuelve factor 1 cuando el pH es
+ * desconocido, y aquí también. No saber el pH no es que el pH sea malo.
+ *
+ * LO QUE NO SE HA VETADO, Y POR QUÉ
+ *
+ * La altitud. Se discutió y se decidió esperar: las bandas altitudinales
+ * tienen un margen de suavizado inventado al crearlas (la amanita va de 200 a
+ * 900 con margen 400, o sea un veto a 1300 m cuando su fuente dice «hasta
+ * 1500 m»), y la seta de cardo se quedaría sin salir por encima de 800 m en
+ * todo el interior de España. Convertir un margen en un corte duro es
+ * inventar el corte. Si algún día se veta, hará falta un `altTecho` con un
+ * valor que salga de la fuente, que hoy no existe en el modelo.
  */
 function factorSuelo(pH, sp) {
   if (pH == null || !Number.isFinite(pH)) {
-    return { factor: 1, etiqueta: '', conocido: false };
+    return { factor: 1, etiqueta: '', conocido: false, veto: false };
   }
 
-  const perfil = sp.pHTolerante
-    ? { opt: 5.6, meseta: 3.4, suelo: 0.85 }
-    : sp.acidofilo
-      ? { opt: 5.2, meseta: 1.5, suelo: 0.60 }
-      : sp.alcalinofila
-        ? { opt: 7.6, meseta: 1.4, suelo: 0.60 }
-        : { opt: 6.8, meseta: 1.8, suelo: 0.70 };
+  const p = PERFIL_PH(sp);
 
-  const d = Math.abs(pH - perfil.opt);
-  // Meseta dentro del rango: 1.00. Fuera, decae 1 por cada 2,2 de pH.
-  const bruto = d <= perfil.meseta ? 1 : 1 - (d - perfil.meseta) / 2.2;
-  const factor = clamp(bruto, perfil.suelo, 1);
+  // El veto. Fuera del rango del perfil — óptimo ± meseta— no crece, y no se
+  // calcula. Se devuelve antes de tocar la curva, con el rango en la etiqueta,
+  // porque un 0 sin explicación parece un fallo de la aplicación.
+  //
+  // El rango NO se escribe aquí a mano: sale de `p.opt` y `p.meseta`, que son
+  // los mismos números con los que la curva empezaba a decaer. No hay un
+  // segundo umbral que pueda desincronizarse del primero.
+  if (pH < p.opt - p.meseta || pH > p.opt + p.meseta) {
+    return {
+      factor: 0,
+      etiqueta: (pH < p.opt - p.meseta ? 'suelo demasiado ácido' : 'suelo demasiado calizo')
+        + ` (pH ${pH.toFixed(1)}, crece entre ${(p.opt - p.meseta).toFixed(1)} y ${(p.opt + p.meseta).toFixed(1)})`,
+      conocido: true,
+      veto: true,
+      rango: [p.opt - p.meseta, p.opt + p.meseta],
+    };
+  }
 
-  const etiqueta = factor >= 0.999
-    ? 'pH adecuado'
-    : (sp.pHTolerante ? 'pH poco habitual'
-      : sp.acidofilo ? 'suelo demasiado calizo'
-        : sp.alcalinofila ? 'suelo demasiado ácido'
-          : 'pH poco habitual');
+  return {
+    factor: 1,
+    etiqueta: 'pH adecuado',
+    conocido: true,
+    veto: false,
+    rango: [p.opt - p.meseta, p.opt + p.meseta],
+  };
+}
 
-  return { factor, etiqueta, conocido: true };
+/**
+ * El perfil de pH de una especie, con su óptimo y su meseta.
+ *
+ * Se saca a una función propia porque la usan dos sitios: la curva y el veto.
+ * Antes estaba dentro de `factorSuelo`, y el veto —que es una decisión
+ * distinta— no podía consultarlo sin duplicar los cuatro números a mano, que
+ * es como un día un chequeo y el factor de suelo no coinciden.
+ *
+ * Los cuatro perfiles, y de dónde salen:
+ *
+ *   acidófila    óptimo 5,2  meseta ±1,5   el boleto y los otros micorrícicos
+ *                                        de pinar, que viven en turba ácida
+ *   alcalinófila óptimo 7,6  meseta ±1,4   el marzuelo «sobre suelos calizos»,
+ *                                        la colmenilla en suelo calcáreo y
+ *                                        el perrechico
+ *   indiferente  óptimo 6,8  meseta ±1,8   las que no distinguen
+ *   tolerante    óptimo 5,6  meseta ±3,4   solo el níscalo: prefiere ácidos
+ *                                        pero no le estorban los calizos ni
+ *                                        los arenosos
+ *
+ * HEURÍSTICO, pendiente de calibrar con observaciones reales: los óptimos salen
+ * de la ecología documentada de cada grupo, no de mediciones de setas. Es lo que
+ * dice el proyecto: lo que no está en una fuente no se inventa, y aquí lo que
+ * hay es una fuente de ecología, no de datos de setas.
+ */
+function PERFIL_PH(sp) {
+  if (sp.pHTolerante) return { nombre: 'tolerante', opt: 5.6, meseta: 3.4, suelo: 0.85 };
+  if (sp.acidofilo) return { nombre: 'acidofila', opt: 5.2, meseta: 1.5, suelo: 0.60 };
+  if (sp.alcalinofila) return { nombre: 'alcalinofila', opt: 7.6, meseta: 1.4, suelo: 0.60 };
+  return { nombre: 'indiferente', opt: 6.8, meseta: 1.8, suelo: 0.70 };
 }
 
 // ------------------------------------------------------------
@@ -1826,6 +1890,13 @@ function indice(sp, ctx) {
       sueloFactor: sueloF.factor,
       sueloEtiqueta: sueloF.etiqueta,
       sueloConocido: sueloF.conocido,
+      sueloVeto: sueloF.veto,
+      sueloRango: sueloF.rango || null,
+      // Los dos vetos, juntos. La tarjeta los lee para saber si tiene que
+      // pintar un 0 con motivo o un 0 sin explicación.
+      //   habitat  el MFE cartografió algo que no es de esta especie
+      //   suelo    el pH del punto está fuera del rango del perfil
+      vetos: [hab.veto ? 'habitat' : null, sueloF.veto ? 'suelo' : null].filter(Boolean),
       gddTope: g.tope,
       gddTopeAlcanzable: g.topeAlcanzable,
       gddDiasDisponibles: g.diasDisponibles,
