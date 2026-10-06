@@ -1603,6 +1603,190 @@ function refreshMushroomSelector() {
 // Buscador y selector geospatial
 // ------------------------------------------------------------
 
+/**
+ * Interpreta lo que se ha pegado en el buscador como coordenada, o devuelve
+ * null si no lo es.
+ *
+ * ESTO FALTABA. El panel de la derecha enseña las coordenadas del punto
+ * («40.3710° N, 5.0610° O») y el buscador, que estaba justo debajo, no
+ * entendía ese texto: devolvía «Ubicación no encontrada». Tampoco entendía
+ * «40.371, -5.061», que es como se copian de Google Maps. O sea que la
+ * aplicaciónaba un dato que no podía reutilizar.
+ *
+ * Se aceptan las cuatro formas de verdad más los grados, minutos y segundos:
+ *
+ *   40.3710, -5.0610          de Google Maps
+ *   40.3710° N, 5.0610° O     de la propia ficha de suelo
+ *   N 40.3710  O 5.0610       hemisferio delante
+ *   40.3710N 5.0610W          hemisferio detrás, con la O/W inglesa
+ *   40° 22' 16" N  5° 3' 39" O
+ *
+ * CON CUANDO SE CONFUNDE UN TOPÓNIMO POR UNA COORDENADA: si el texto tiene dos
+ * números sin hemisferio ni signo, no se interpreta. «Km 40», «Pk 120» o
+ * «Casa 7 y 9» siguen yendo al geocodificador, que es lo que quieren. Making
+ * falta una señal clara: dos hemisferios, o dos signos.
+ *
+ * El rango se comprueba siempre. Un número mal pegado sin comprobarse te
+ * manda al otro extremo del planeta y a ti no te queda más que volver, así que
+ * un valor fuera de rango avisa en vez de moverse.
+ *
+ * @returns {{lat:number, lng:number, texto:string}|null}
+ */
+function parsearCoordenadas(entrada) {
+  if (typeof entrada !== 'string') return null;
+  const s = entrada.trim().toUpperCase();
+  if (!s) return null;
+
+  // El guion largo y la coma se normalizan para que el patrón no tenga que
+  // reconocer los dos. La coma se pasa a espacio.
+  const normal = s
+    .replace(/[−–—]/g, '-')
+    .replace(/\s*,\s*/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // DOS PASES, Y POR QUÉ NO VALE UNO SOLO.
+  //
+  // El patrón con hemisferio dentro («número… hemisferio») empareja de izquierda
+  // a derecha y se come la letra que es del OTRO número: en «N 40.3710 O 5.0610»
+  // la O acababa pegada al primer trozo como si fuera suya, y la longitud se
+  // iba en positivo. Con un espacio de por medio entre el número y la letra, un
+  // solo patrón NO PUEDE saber a quién pertenece.
+  //
+  // Así que primero se sacan los números con su posición, luego las letras con
+  // la suya, y cada letra se asigna al número más cercano. «40.3710° N, 5.0610°
+  // O» y «40.3710N 5.0610W» salen los dos bien con el mismo código.
+
+  // 1 · los números, en decimal o en g/m/s.
+  //
+  // Los minutos exigen su apóstrofo y los segundos su comilla. Con ellos
+  // opcionales, el grupo de segundos se COMÍA el segundo número: «40.3710,
+  // 5.0610» se leía como un solo número con 5,061 segundos, y la coordenada
+  // se rechazaba por no tener dos números. El formato más pegado del mundo,
+  // otra vez.
+  const RE_NUM = /(-?\d{1,3}(?:\.\d+)?)(?:\s*°(?:\s*(\d{1,2}(?:\.\d+)?))?\s*'?)?(?:\s*(\d{1,2}(?:\.\d+)?)\s*")?/g;
+  const numeros = [];
+  let m;
+  while ((m = RE_NUM.exec(normal)) !== null) {
+    numeros.push({
+      crudo: m[0],
+      ini: m.index,
+      fin: m.index + m[0].length,
+      numero: m[1],
+      signo: m[1].startsWith('-') ? -1 : 1,
+      grados: Math.abs(parseFloat(m[1])),
+      min: m[2] ? parseFloat(m[2]) : null,
+      seg: m[3] ? parseFloat(m[3]) : null,
+      hemi: null,
+    });
+    if (numeros.length > 2) return null;   // tres numeros no son una coordenada
+  }
+  if (numeros.length !== 2) return null;
+
+  // 2 · las letras de hemisferio, con su posición
+  const letras = [];
+  for (const mm of normal.matchAll(/[NSEOW]/g)) {
+    letras.push({ letra: mm[0], pos: mm.index });
+  }
+
+  // 3 · cada letra va al número SIN hemisferio todavía que tenga más cerca, y a
+  // igualdad gana el anterior. Ese matiz es lo que separa los dos formatos:
+  //
+  //   «40.3710° N 5.0610° O»   la N está a 1 carácter del final del primero
+  //   «N 40.3710 O 5.0610»      la O está a 1 del final del primero y a 2 del
+  //                             principio del segundo
+  //
+  // En las dos, la letra que parece más cerca es la segunda, pero en la
+  // segunda ya hay una letra pegada al primer número: es la O del segundo. Sin
+  // la regla de «solo números sin letra», esa O se quedaba pegada al primero y
+  // la longitud salía en positivo, que es el fallo que hacia el mapa al sitio
+  // equivocado.
+  for (const L of letras) {
+    let mejor = null;
+    let dist = Infinity;
+    for (const n of numeros) {
+      if (n.hemi) continue;          // ya tiene su letra: no puede tener dos
+      const d = L.pos < n.ini ? n.ini - L.pos
+        : L.pos > n.fin ? L.pos - n.fin
+          : 0;
+      if (d <= dist) { dist = d; mejor = n; }
+    }
+    // Lejos no cuenta: en «Casa 7 y 9» no hay letras, pero si las hubiera
+    // («Nave 4») no deben contaminar el número.
+    if (mejor && dist <= 3) mejor.hemi = L.letra;
+  }
+
+  const trozos = numeros;
+  const conLetra = trozos.filter((t) => t.hemi).length;
+  const conSigno = trozos.filter((t) => t.numero.startsWith('-') || t.numero.startsWith('+')).length;
+
+  // LA SEPARACIÓN ENTRE LOS DOS NÚMEROS ES LA SEÑAL. Se quitan los dos trozos
+  // del texto y se mira qué queda: si solo hay comas, espacios, grados,
+  // comillas o letras de hemisferio, esto es un par de coordenadas. Si queda
+  // alguna palabra, es un topónimo con números («Casa 7 y 9», «Cerro 3
+  // Cruces») y tiene que ir al geocodificador.
+  //
+  // La primera versión exigía además dos hemisferios o dos signos, y rechazaba
+  // «40.3710, -5.0610», que es justo el formato que da Google Maps: ahí solo
+  // la longitud lleva signo, porque el norte no se escribe. El formato más
+  // común del mundo quedaba fuera por una regla demasiado estricta. Ahora la
+  // separación basta, y las letras y los signos son un refuerzo: si hay una
+  // letra o un signo pegado a un número, más pruebas de que es coordenada.
+  // Se quitan los trozos ENTEROS, no solo los grados. Con «40° 22' 16" N» quitar
+  // solo el «40» dejaba los minutos y los segundos sueltos, y eso se leía como
+  // si fueran palabras y la coordenada entera se rechazaba.
+  const resto = normal
+    .replace(trozos[0].crudo, ' ')
+    .replace(trozos[1].crudo, ' ')
+    .replace(/[°'";\u00b0\s,.]/g, '')
+    .replace(/[NSEOW]/gi, '');
+  if (resto.length) return null;
+  // Y para que «40.3710 5.0610» no se confunda con dos números sueltos de un
+  // topónimo, la forma desnuda solo se admite si los dos son claramente
+  // separables por coma, o los dos llevan letra o los dos signo.
+  //
+  // La coma se mira en el texto ORIGINAL, no en `normal`: ahí ya se ha
+  // cambiado por un espacio, y mirar el sitio equivocado hacía que el formato
+  // de Google Maps —que es el más pegado— se rechazara solo.
+  const hayComa = /[;,]/.test(s);
+  if (!hayComa && conLetra < 2 && conSigno < 1) return null;
+
+  // Un hemisferio en la misma posición en los dos sería un error de dedo:
+  // «N 40.3710 O 5.0610» son latitudes, «40.3710N 5.0610W» es longitud al
+  // revés. Se resuelve mirando la letra.
+  function valor(t, eje) {
+    let g = t.grados + (t.min || 0) / 60 + (t.seg || 0) / 3600;
+    g *= t.signo;
+    if (t.hemi) {
+      const h = t.hemi.toUpperCase();
+      if (eje === 'lat') {
+        // En latitud, este y oeste NO existen. «40.3710N 5.0610N» es un error
+        // de dedo, y antes se aceptaba en silencio con la longitud en positivo,
+        // que es justo el fallo que lleva a un sitio equivocado sin avisar.
+        if (h === 'E' || h === 'W' || h === 'O') return NaN;
+        if (h === 'S') g = -Math.abs(g);
+        if (h === 'N') g = Math.abs(g);
+      } else {
+        // En longitud, norte y sur NO existen, y W y O son oeste.
+        if (h === 'N' || h === 'S') return NaN;
+        if (h === 'W' || h === 'O') g = -Math.abs(g);
+        if (h === 'E') g = Math.abs(g);
+      }
+    }
+    return g;
+  }
+
+  const lat = valor(trozos[0], 'lat');
+  const lng = valor(trozos[1], 'lng');
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  // El rango se comprueba aquí y no en el mapa: es lo que evita acceptarle
+  // «40.371, -205.061» y acabar en el hemisferio equivocado.
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+
+  return { lat, lng, texto: s };
+}
+
 function initSearch() {
   const inp = document.getElementById('searchInputDashboard');
   const btn = document.getElementById('searchBtnDashboard');
@@ -1612,8 +1796,19 @@ function initSearch() {
 }
 
 async function buscar(q) {
-  if (!q?.trim()) return notify('Introduce una ubicación', 'error');
-  const res = await buscarLugar(q.trim());
+  const texto = (q || '').trim();
+  if (!texto) return notify('Introduce una ubicación', 'error');
+
+  // Primero se mira si es una coordenada. Antes no se miraba, y el panel de
+  // suelo enseña justo el texto que el buscador no entendía.
+  const coord = parsearCoordenadas(texto);
+  if (coord) {
+    await setLocation(coord.lat, coord.lng);
+    notify(`📍 ${coordsTexto(coord.lat, coord.lng)}`, 'success');
+    return;
+  }
+
+  const res = await buscarLugar(texto);
   if (!res.length) return notify('Ubicación no encontrada', 'error');
   await setLocation(res[0].latitude, res[0].longitude);
   notify(`📍 ${res[0].name}`, 'success');

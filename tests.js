@@ -3078,7 +3078,7 @@ grupo('26. El número de versión existe y está bien escrito');
 // número que mueve una predicción sube el primero. Aquí se comprueba que el
 // número está donde tiene que estar y que no se ha roto.
 
-const VERSION = 'v2.6';
+const VERSION = 'v2.7';
 
 prueba('el número de versión está debajo del lema, en la cabecera', () => {
   const html = require('fs').readFileSync('index.html', 'utf8');
@@ -3577,6 +3577,185 @@ prueba('ninguna frase del documento junta un recuento que no sume', () => {
       'una frase del documento suma ' + a + ' + ' + b + ' = ' + (a + b)
       + ' y hay ' + total + ' especies');
   }
+});
+
+grupo('31. El buscador acepta coordenadas, que son las que el panel enseña');
+
+// El panel de suelo y clima escribe «40.3710° N, 5.0610° O» y el buscador, que
+// esta justo debajo, devolvía «Ubicación no encontrada» con ese texto. Tampoco
+// entendía «40.371, -5.061», que es como se copian de Google Maps. O sea que
+// la aplicación mostraba un dato que no podía reutilizar.
+
+/** Saca `parsearCoordenadas` de app.js para poder probarla de verdad. */
+function parseadorDesdeAppJs() {
+  const src = require('fs').readFileSync('app.js', 'utf8');
+  const i = src.indexOf('function parsearCoordenadas(');
+  assert.ok(i >= 0, 'no se encuentra parsearCoordenadas() en app.js');
+  const desde = src.indexOf('/**', i);           // el comentario de antes
+  const cuerpo = src.slice(desde >= 0 && desde < i ? desde : i);
+  // Se corta en la siguiente funcion de nivel superior.
+  const fin = cuerpo.search(/\nfunction (?!parsearCoordenadas)\w/);
+  const trozo = fin > 0 ? cuerpo.slice(0, fin) : cuerpo;
+  return new Function('return (' + trozo.replace(/^[\s\S]*?function parsearCoordenadas/, 'function parsearCoordenadas') + ');')();
+}
+
+prueba('entiende las cuatro formas de copiar una coordenada', () => {
+  const p = parseadorDesdeAppJs();
+
+  // De Google Maps: decimal con coma.
+  let c = p('40.3710, -5.0610');
+  assert.ok(c, 'no entiende «40.3710, -5.0610»');
+  assert.ok(Math.abs(c.lat - 40.3710) < 1e-6, 'latitud: ' + c.lat);
+  assert.ok(Math.abs(c.lng - -5.0610) < 1e-6, 'longitud: ' + c.lng);
+
+  // De la propia ficha de suelo, que es lo que el usuario ve.
+  c = p('40.3710° N, 5.0610° O');
+  assert.ok(c, 'no entiende el formato del panel: «40.3710° N, 5.0610° O»');
+  assert.ok(Math.abs(c.lat - 40.3710) < 1e-6, 'latitud: ' + c.lat);
+  assert.ok(Math.abs(c.lng - -5.0610) < 1e-6, 'la O de Oeste debe restar: ' + c.lng);
+
+  // Hemisferio delante.
+  c = p('N 40.3710  O 5.0610');
+  assert.ok(c, 'no entiende «N 40.3710  O 5.0610»');
+  assert.ok(Math.abs(c.lat - 40.3710) < 1e-6, 'latitud: ' + c.lat);
+  assert.ok(Math.abs(c.lng - -5.0610) < 1e-6, 'longitud: ' + c.lng);
+
+  // Hemisferio detrás, con la O y la W inglesas.
+  c = p('40.3710N 5.0610W');
+  assert.ok(c, 'no entiende «40.3710N 5.0610W»');
+  assert.ok(Math.abs(c.lat - 40.3710) < 1e-6, 'latitud: ' + c.lat);
+  assert.ok(Math.abs(c.lng - -5.0610) < 1e-6, 'longitud: ' + c.lng);
+  c = p('40.3710N 5.0610E');
+  assert.ok(c && Math.abs(c.lng - 5.0610) < 1e-6, 'la E de Este debe sumar');
+});
+
+prueba('entiende grados, minutos y segundos', () => {
+  const p = parseadorDesdeAppJs();
+  const c = p('40° 22\' 16" N  5° 3\' 39" O');
+  assert.ok(c, 'no entiende grados, minutos y segundos');
+  // 40 + 22/60 + 16/3600
+  assert.ok(Math.abs(c.lat - 40.3711) < 1e-3, 'latitud en g/m/s: ' + c.lat);
+  // 5 + 3/60 + 39/3600
+  assert.ok(Math.abs(c.lng - -5.0608) < 1e-3, 'longitud en g/m/s: ' + c.lng);
+});
+
+prueba('no confunde un topónimo con números por una coordenada', () => {
+  const p = parseadorDesdeAppJs();
+  // Estas dos NO son coordenadas, y si lo fueran se iría el mapa al sitio
+  // equivocado en lugar de buscar el topónimo.
+  assert.strictEqual(p('Km 40'), null, '«Km 40» no es una coordenada');
+  assert.strictEqual(p('Pk 120'), null, '«Pk 120» no es una coordenada');
+  assert.strictEqual(p('Casa 7 y 9'), null, '«Casa 7 y 9» no es una coordenada');
+  assert.strictEqual(p('Cerro 3 Cruces'), null, 'no es una coordenada');
+  // Y las que sí son, pero tienen una sola señal, tampoco cuentan.
+  assert.strictEqual(p('40.3710'), null, 'un número suelto no es una coordenada');
+  assert.strictEqual(p(''), null);
+  assert.strictEqual(p('   '), null);
+  assert.strictEqual(p(null), null, 'no debe reventar con null');
+  assert.strictEqual(p(undefined), null, 'no debe reventar con undefined');
+});
+
+prueba('rechaza lo que está fuera de rango en vez de moverse', () => {
+  const p = parseadorDesdeAppJs();
+  // El fallo peor: un número mal pegado que te manda al otro extremo del
+  // planeta. Aquí tiene que avisar, no moverse.
+  assert.strictEqual(p('40.3710, -205.0610'), null, 'longitud de 205° no vale');
+  assert.strictEqual(p('95.0, -5.0'), null, 'latitud de 95° no vale');
+  assert.strictEqual(p('40.3710N 5.0610N'), null,
+    'las dos al norte no puede ser longitud: norte es solo latitud');
+  // Los bordes sí valen.
+  assert.ok(p('90, 180'), 'el polo y la línea de 180° son valores válidos');
+  assert.ok(p('-90, -180'), 'el polo sur y 180° oeste también');
+});
+
+prueba('el buscador consulta la coordenada ANTES que el geocodificador', () => {
+  // Si se invirtiera el orden, una coordenada iría primero al geocodificador,
+  // que devolvería cero resultados, y el aviso seria «Ubicación no encontrada».
+  const src = require('fs').readFileSync('app.js', 'utf8');
+  const i = src.indexOf('async function buscar(');
+  assert.ok(i >= 0, 'no se encuentra buscar()');
+  const cuerpo = src.slice(i, i + 900);
+  const iCoord = cuerpo.indexOf('parsearCoordenadas(');
+  const iGeo = cuerpo.indexOf('buscarLugar(');
+  assert.ok(iCoord > 0 && iGeo > 0, 'faltan las dos ramas del buscador');
+  assert.ok(iCoord < iGeo,
+    'la coordenada se consulta despues que el geocodificador: '
+    + 'una coordenada nunca llegaria a interpretarse');
+  // Y con exito de la rama de coordenada, se corta antes de buscar el topónimo.
+  const corte = cuerpo.indexOf('return;');
+  assert.ok(corte > iCoord && corte < iGeo, 'la rama de coordenada no corta la funcion');
+});
+
+grupo('32. Dos fallos del lector de coordenadas que ya ocurrieron y volverían');
+
+// Estos dos no son casos casos raros: los dos son formatos que se pegan todos los
+// días, y los dos hicieron que una coordenada buena se rechazara sola. Se dejan
+// fijados aqui para que el arreglo no se deshaga con el proximo retoque.
+
+prueba('el segundo numero no se come como segundos del primero', () => {
+  const p = parseadorDesdeAppJs();
+
+  // «40.3710, 5.0610» NO tiene hemisferio ni signo en ninguno de los dos: el
+  // norte no se escribe y el este tampoco. El patrón que lee los números tenía
+  // el grupo de segundos opcional, así que se comía el 5.0610 como si fueran
+  // segundos del 40.3710. Quedaba un solo número, y la coordenada se
+  // rechazaba: el formato de Google Maps con las dos en positivo, que es el
+  // que sale cuando copias un punto al este de Greenwich.
+  const c = p('40.3710, 5.0610');
+  assert.ok(c, '«40.3710, 5.0610» no es una coordenada');
+  assert.ok(Math.abs(c.lat - 40.3710) < 1e-6, 'latitud: ' + (c && c.lat));
+  assert.ok(Math.abs(c.lng - 5.0610) < 1e-6, 'longitud: ' + (c && c.lng));
+
+  // El mismo texto con la longitud en negativo: dos números y un signo.
+  const n = p('40.3710, -5.0610');
+  assert.ok(n, '«40.3710, -5.0610» no es una coordenada');
+  assert.ok(Math.abs(n.lng + 5.0610) < 1e-6, 'longitud: ' + (n && n.lng));
+
+  // Y sin coma, solo con un espacio: sigue siendo coordenada porque hay signo.
+  const sp = p('40.3710 -5.0610');
+  assert.ok(sp, '«40.3710 -5.0610» no es una coordenada');
+  assert.ok(Math.abs(sp.lng + 5.0610) < 1e-6, 'longitud: ' + (sp && sp.lng));
+});
+
+prueba('la letra de hemisferio va con SU numero, no con el primero que pille', () => {
+  const p = parseadorDesdeAppJs();
+
+  // En «N 40.3710 O 5.0610» la O está a un carácter del final del primer número
+  // y a dos del principio del segundo. La regla de «la más cercana» se la
+  // quedaba el primero, y entonces la longitud salía en POSITIVO: el mapa se
+  // iba cinco grados al este del sitio y sin avisar.
+  const c = p('N 40.3710  O 5.0610');
+  assert.ok(c, 'no entiende «N 40.3710  O 5.0610»');
+  assert.ok(Math.abs(c.lat - 40.3710) < 1e-6, 'latitud: ' + c.lat);
+  assert.ok(Math.abs(c.lng + 5.0610) < 1e-6,
+    'la O es del segundo numero: la longitud sale en ' + c.lng + ', deberia ser -5.0610');
+
+  // El del panel, que lleva la letra DESPUÉS y con espacio. Aquí la letra
+  // también parece más cerca del primero, pero el resultado es el correcto:
+  // los dos formatos tienen que salir igual aunque la forma sea distinta.
+  const d = p('40.3710° N, 5.0610° O');
+  assert.ok(d, 'no entiende «40.3710° N, 5.0610° O»');
+  assert.ok(Math.abs(d.lng + 5.0610) < 1e-6, 'longitud: ' + d.lng);
+
+  // Y en el otro hemisferio, que es donde se nota si la regla está bien:
+  // SÍ es hemisferio norte, E SÍ es este.
+  const s = p('S 33.8688  E 151.2093');
+  assert.ok(s, 'no entiende «S 33.8688  E 151.2093»');
+  assert.ok(Math.abs(s.lat + 33.8688) < 1e-6, 'la S es sur: ' + s.lat);
+  assert.ok(Math.abs(s.lng - 151.2093) < 1e-6, 'la E es este: ' + s.lng);
+});
+
+prueba('norte y sur en longitud, o este y oeste en latitud, se rechazan', () => {
+  const p = parseadorDesdeAppJs();
+
+  // En longitud no hay norte ni sur, y en latitud no hay este ni oeste. Si la
+  // letra no se comprueba contra el eje, «40.3710N 5.0610N» se aceptaba con la
+  // longitud en positivo, que es el peor fallo posible: mover el mapa sin
+  // decir nada en lugar de avisar.
+  assert.strictEqual(p('40.3710N 5.0610N'), null, 'no hay longitud norte');
+  assert.strictEqual(p('40.3710N 5.0610S'), null, 'no hay longitud sur');
+  assert.strictEqual(p('40.3710E 5.0610N'), null, 'no hay latitud este');
+  assert.strictEqual(p('40.3710W 5.0610N'), null, 'no hay latitud oeste');
 });
 
 cola.then(() => {
