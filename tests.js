@@ -3078,7 +3078,7 @@ grupo('26. El número de versión existe y está bien escrito');
 // número que mueve una predicción sube el primero. Aquí se comprueba que el
 // número está donde tiene que estar y que no se ha roto.
 
-const VERSION = 'v2.5';
+const VERSION = 'v2.6';
 
 prueba('el número de versión está debajo del lema, en la cabecera', () => {
   const html = require('fs').readFileSync('index.html', 'utf8');
@@ -3517,6 +3517,66 @@ prueba('el manejador pasa la clave, no la ficha', () => {
     (ch[0].match(/marcaVetada\([^)]*\)/) || [''])[0]);
   assert.ok(!/marcaVetada\(sp/.test(ch[0]),
     'el manejador sigue pasando la ficha en lugar de la clave');
+});
+
+grupo('30. Los recuentos de bandas del documento cuadran entre sí');
+
+// El recuento de bandas aparecía en tres sitios del documento, y solo dos
+// estaban vigilados. El tercero decía «10 estimadas […] las otras 10 sí tienen
+// fuente»: 10 + 10 = 20 con 19 especies. El error estaba ahí desde antes y
+// pasó porque los tests miraban el párrafo 4.5 y el badge, no este.
+
+prueba('todas las frases con recuento de bandas dicen lo mismo', () => {
+  const html = require('fs').readFileSync('index.html', 'utf8');
+  const total = A.SPECIES.length;
+  const doc = A.SPECIES.filter((s) => s.altEvidencia === 'documentado').length;
+  const ind = A.SPECIES.filter((s) => s.altEvidencia === 'indicado').length;
+
+  // 1 · El párrafo 4.5
+  const m45 = html.match(/De las (\d+) bandas, <strong>(\d+) proceden[^<]*y\s*(\d+) se deducen/);
+  assert.ok(m45, 'no se encuentra el recuento del apartado 4.5');
+  assert.strictEqual(numeroDe(m45[1]), total, '4.5 dice «de las ' + m45[1] + ' bandas»');
+  assert.strictEqual(Number(m45[2]), doc, '4.5 dice ' + m45[2] + ' documentadas');
+  assert.strictEqual(Number(m45[3]), ind, '4.5 dice ' + m45[3] + ' deducidas');
+
+  // 2 · El badge del resumen 4.9
+  const badge = html.match(/(\d+) de \d+<\/span>\s*bandas altitudinales con/);
+  assert.ok(badge, 'no se encuentra el badge de bandas del resumen');
+  assert.strictEqual(Number(badge[1]), doc, 'el badge dice ' + badge[1] + ' documentadas');
+
+  // 3 · Limitaciones, el que estaba mal y nadie miraba.
+  const lim = html.match(/De las \d+ bandas altitudinales, <strong>(\d+) están estimadas<\/strong>[\s\S]{0,260}?Las otras (\d+) sí tienen fuente/);
+  assert.ok(lim, 'no se encuentra el recuento de Limitaciones');
+  assert.strictEqual(Number(lim[1]), ind,
+    'Limitaciones dice ' + lim[1] + ' estimadas y hay ' + ind);
+  assert.strictEqual(Number(lim[2]), doc,
+    'Limitaciones dice «las otras ' + lim[2] + ' tienen fuente» y hay ' + doc
+    + ': si no, las dos cifras no suman las ' + total + ' especies');
+
+  // Y el total tiene que salir, que es lo que falla cuando una de las dos se
+  // equivoca: aquí salían 10 + 10 con 19 especies.
+  assert.strictEqual(Number(lim[1]) + Number(lim[2]), total,
+    'Limitaciones: ' + lim[1] + ' + ' + lim[2] + ' = '
+    + (Number(lim[1]) + Number(lim[2])) + ', pero hay ' + total + ' especies');
+});
+
+prueba('ninguna frase del documento junta un recuento que no sume', () => {
+  // Red de seguridad: cualquier frase del estilo «N están X […] las otras M
+  // tienen Y» tiene que sumar el total de especies. Así, si alguien vuelve a
+  // tocar uno de los dos números, salta aquí aunque no sea el mismo texto.
+  const html = require('fs').readFileSync('index.html', 'utf8');
+  const total = A.SPECIES.length;
+
+  const pares = [...html.matchAll(
+    /(\d+) están estimadas<\/strong>[\s\S]{0,300}?Las otras (\d+) sí tienen fuente/g)]
+    .map((m) => [Number(m[1]), Number(m[2])]);
+
+  assert.ok(pares.length >= 1, 'no se encuentra ninguna pareja de recuentos que vigilar');
+  for (const [a, b] of pares) {
+    assert.strictEqual(a + b, total,
+      'una frase del documento suma ' + a + ' + ' + b + ' = ' + (a + b)
+      + ' y hay ' + total + ' especies');
+  }
 });
 
 cola.then(() => {
