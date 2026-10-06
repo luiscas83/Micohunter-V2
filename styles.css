@@ -2685,38 +2685,31 @@ body {
 /* ─────────────────────────────────────────────────────────────────────────
    Especies vetadas en el punto actual
    ─────────────────────────────────────────────────────────────────────────
-   Una especie vetada no aparece en el dashboard: el modelo ha decidido que no
-   puede fructificar ahí y no calcula. Aquí se ve POR QUÉ, y con el interruptor
-   se puede mirar igualmente.
+   Una especie vetada no puede fructificar en el punto. Aquí se ve POR QUÉ, con
+   la casilla desactivada, para que no se pueda activar por error.
+
+   Si ya estaba seleccionada —se eligió en otro punto donde sí crecía— la
+   casilla se deja activa para poder desmarcarla, y en el dashboard su tarjeta
+   lleva el motivo escrito. De ahí el segundo estado, `.vetada-sel`.
 
    El color NO es rojo. El rojo del cartel tóxico significa «no la comas», y
    mezclarlo con «aquí no crece» sería usar el mismo aviso para dos cosas que
-   no tienen nada que ver. Este es gris, que es lo que corresponde a una especie
+   no tienen nada que ver. Esto es gris, que es lo que corresponde a una especie
    que simplemente no toca. */
-
-.mostrar-vetadas {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 0 10px;
-    padding: 8px 12px;
-    background: var(--gris-claro, #f4f4f2);
-    border-radius: 8px;
-    font-size: 0.85rem;
-    color: var(--gris-oscuro, #5a5a55);
-    cursor: pointer;
-}
-
-.mostrar-vetadas:hover {
-    background: var(--gris-medio, #eaeae7);
-}
 
 .mushroom-option.vetada {
     opacity: 0.55;
+    cursor: not-allowed;
 }
 
 .mushroom-option.vetada .mushroom-option-name {
     color: var(--gris-medio-texto, #8a8a84);
+}
+
+/* Ya elegida y vetada aquí: se puede deseleccionar, y el motivo avisa de que su
+   tarjeta en el dashboard va a salir a cero. */
+.mushroom-option.vetada-sel .mushroom-option-veto {
+    color: #8a6a2a;
 }
 
 .mushroom-option-veto {
@@ -2725,6 +2718,44 @@ body {
     font-weight: 600;
     color: #6b6b64;
     font-style: italic;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Tarjeta de una especie vetada en el dashboard
+   ─────────────────────────────────────────────────────────────────────────
+   Se pinta con su 0 y su motivo en vez de desaparecer. Un 0 sin explicación
+   parece un fallo de la aplicación, y con la razón a la vista es un dato del
+   modelo. El anillo a cero y las barras se ocultan: cuando el veto ya ha
+   decidido, enseñar «reserva de humedad 97 %» al lado del 0 se contradice. */
+
+.mushroom-card-vetada {
+    opacity: 0.72;
+    background: #f4f2ee;
+    border-style: dashed;
+}
+
+.mushroom-card-vetada .mushroom-title-section,
+.mushroom-card-vetada .mushroom-detail-grid {
+    opacity: 0.6;
+}
+
+.veto-banner {
+    margin: 12px 0;
+    padding: 10px 14px;
+    background: #e8e5de;
+    border-left: 4px solid #a9a49a;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    color: #4a4740;
+    line-height: 1.45;
+}
+
+.veto-banner strong {
+    display: block;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    color: #6f6a5f;
+    margin-bottom: 3px;
 }
 
 /* La nota al pie del dashboard, cuando hay species descartadas. */

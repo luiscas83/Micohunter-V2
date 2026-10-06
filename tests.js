@@ -2954,17 +2954,74 @@ prueba('la altura NO se veta, y no se veta a propósito', () => {
     + A_.altitudeFactor(1200, cardo));
 });
 
-prueba('el veto de pH aparece en el guion del selector de Especies', () => {
-  // Si el selector no dice el motivo, el veto esconde sin explicar.
+prueba('el veto se explica en Especies y en la tarjeta, sin interruptor', () => {
+  // Si el veto no dice el motivo, esconde sin explicar. Y ya NO hay interruptor
+  // para verlo todo: el usuario lo quitó por sobrante. Lo que hay es la casilla
+  // desactivada en Especies, y el motivo escrito en la tarjeta del dashboard.
   const src = require('fs').readFileSync('app.js', 'utf8');
   assert.ok(/pH fuera de rango/.test(src),
-    'el selector tiene que explicar el veto de suelo');
-  assert.ok(/fuera de su h.bitat/.test(src),
-    'el selector tiene que explicar el veto de hábitat');
-  assert.ok(/mostrarVetadas/.test(src),
-    'tiene que existir el interruptor para verlas igualmente');
-  assert.ok(/refreshMushroomSelector/.test(src),
-    'el interruptor necesita una función que redibuje sin duplicar escuchadores');
+    'el veto de suelo tiene que tener su texto');
+  assert.ok(/Fuera de su hábitat/.test(src),
+    'el veto de hábitat tiene que tener su texto');
+  assert.ok(/Fuera de temporada/.test(src),
+    'el veto de temporada tiene que tener su texto');
+
+  // El interruptor que se quitó, y con él sus dos enlaces.
+  //
+  // Se mira el CÓDIGO, no el texto entero: en el comentario que explica la
+  // decisión aparece el nombre del interruptor, y eso es justamente lo que hay
+  // que dejar escrito. Si se comprobara sobre el fichero entero, este test
+  // obligaría a borrar la explicación.
+  const codigo = src
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')   // comentarios de bloque
+    .replace(/^[ \t]*\/\/.*$/gm, ' ')     // comentarios de línea
+    .replace(/<!--[\s\S]*?-->/g, ' ');    // comentarios HTML, por si acaso
+
+  assert.ok(!/mostrarVetadas/.test(codigo),
+    'ha vuelto el interruptor de las vetadas');
+  assert.ok(!/Mostrar tambi/.test(codigo),
+    'ha vuelto el texto del interruptor');
+  assert.ok(!/verVetadas/.test(codigo),
+    'han vuelto los enlaces «Ver por qué» / «Verlas», '
+    + 'que solo tienen sentido con el interruptor');
+  assert.ok(!/irAEspeciesConVetadas/.test(codigo),
+    'ha vuelto la función que encendía el interruptor');
+  const css = require('fs').readFileSync('styles.css', 'utf8');
+  assert.ok(!/mostrar-vetadas/.test(css),
+    'el CSS del interruptor se ha quedado colgando');
+
+  // Y la decisión sigue escrita, para que nadie lo vuelva a añadir sin
+  // saber por qué se quitó.
+  assert.ok(/interruptor/.test(src),
+    'se ha borrado el comentario que explica por qué no hay interruptor');
+
+  // La casilla desactivada es lo que sustituye al interruptor.
+  const fn = src.match(/function refreshMushroomSelector\(\)[\s\S]*?\n\}/);
+  assert.ok(fn, 'no se encuentra refreshMushroomSelector()');
+  assert.ok(/bloqueada = vetada && !on/.test(fn[0]),
+    'una especie vetada que ya estaba elegida se está bloqueando: '
+    + 'entonces no se podría deseleccionar');
+  assert.ok(/bloqueada \? ' disabled'/.test(fn[0]),
+    'la casilla de una especie vetada y no elegida no se desactiva');
+
+  // Y la tarjeta del dashboard lleva el motivo.
+  const tarjeta = src.match(/function tarjeta\(r\)[\s\S]*?\n\}/);
+  assert.ok(tarjeta, 'no se encuentra tarjeta()');
+  assert.ok(/mushroom-card-vetada/.test(tarjeta[0]),
+    'la tarjeta vetada no lleva su propia clase para poder atenuarla');
+  assert.ok(/veto-banner/.test(tarjeta[0]),
+    'la tarjeta de una especie vetada no lleva el cartel con el motivo');
+  assert.ok(/motivoDeVeto\(r\)/.test(tarjeta[0]),
+    'el cartel del veto no dice el motivo');
+
+  // El panel ya no filtra las vetadas: si las quita, no hay dónde ver el motivo.
+  const panel = src.match(/function renderTarjetas\(\)[\s\S]*?\n\}/);
+  assert.ok(panel, 'no se encuentra renderTarjetas()');
+  assert.ok(!/elegidas\.filter\(r => !r\.detalle\.vetos\.length\)/.test(panel[0]),
+    'el dashboard vuelve a descartar las vetadas: '
+    + 'sin tarjeta no hay dónde leer el motivo');
+  assert.ok(/elegidas\.map\(r => tarjeta\(r\)\)/.test(panel[0]),
+    'el dashboard tiene que pintar todas las elegidas, vetadas incluidas');
 });
 
 
@@ -2983,7 +3040,7 @@ grupo('26. El número de versión existe y está bien escrito');
 // número que mueve una predicción sube el primero. Aquí se comprueba que el
 // número está donde tiene que estar y que no se ha roto.
 
-const VERSION = 'v2.2';
+const VERSION = 'v2.3';
 
 prueba('el número de versión está debajo del lema, en la cabecera', () => {
   const html = require('fs').readFileSync('index.html', 'utf8');

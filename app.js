@@ -762,48 +762,31 @@ function renderTarjetas() {
   // puntuación: el orden en el que salen las tarjetas es fijo, para que no
   // se muevan de sitio cada vez que cambia el tiempo.
   //
-  // Y se descartan las que están vetadas, por decisión del usuario. Una
-  // especie vetada no tiene aquí: tiene un 0 que el modelo ha decidido no
-  // calcular. Enseñar un anillo a cero veinte veces no informa de nada, y
-  // desplaza a las que sí tienen probabilidad.
-  //
-  // NO SE BORRA DEL MODELO. Siguen en `currentRanking` y en la tabla de
-  // Análisis, y se pueden ver con su motivo en la pestaña Especies, que es
-  // donde está el interruptor para enseñarlas.
+  // Y las vetadas NO se descartan. Se pintan con su 0 y su motivo. Antes sí se
+  // quitaban, y para verlas hacía falta un interruptor aparte; el usuario lo
+  // quitó porque le sobraba un botón más. Si alguien ha dejado una especie
+  // seleccionada, lo que quiere es verla, y taparla es peor que explicarla.
   const elegidas = currentRanking.filter(r => selectedMushrooms.includes(r.sp.key));
-  const vis = porPrioridad(elegidas.filter(r => !r.detalle.vetos.length));
 
   if (!elegidas.length) {
     box.innerHTML = '<p class="placeholder-text">Selecciona setas en la pestaña 🍄 Especies</p>';
     return;
   }
 
-  if (!vis.length) {
-    box.innerHTML = `<p class="placeholder-text">Ninguna de las ${elegidas.length} setas
-      seleccionadas puede fructificar aquí: ${motivosDeVeto(elegidas)}.
-      <button class="link-button" id="verVetadas">Ver por qué</button></p>`;
-    const b = document.getElementById('verVetadas');
-    if (b) b.addEventListener('click', irAEspeciesConVetadas);
-    return;
-  }
+  box.innerHTML = elegidas.map(r => tarjeta(r)).join('');
 
-  box.innerHTML = vis.map(r => tarjeta(r)).join('');
-
-  // Si hay descartadas, una nota al pie que no interrumpe: dice cuántas hay y
-  // dónde verlas. Se pone aparte para que el usuario no las busque.
-  const fuera = elegidas.length - vis.length;
+  // Nota al pie solo si hay alguna vetada: las que sí pueden fructificar ya se
+  // ven en sus tarjetas, así que no hace falta decir nada más.
+  const fuera = elegidas.filter(r => r.detalle.vetos.length).length;
   if (fuera > 0) {
     const nota = document.createElement('p');
     nota.className = 'placeholder-text tarjetas-nota';
     // OJO: aquí no va un «están» delante, porque `motivosDeVeto` ya lleva el
     // verbo de acuerdo en cada cláusula («4 están fuera de temporada»). Con las
     // dos cosas se leía «están 4 están».
-    nota.innerHTML = `+ ${fuera} de las ${elegidas.length} seleccionadas
-      ${motivosDeVeto(elegidas)}, y no se calculan.
-      <button class="link-button" id="verVetadas2">Verlas</button>`;
+    nota.innerHTML = `${fuera} de las ${elegidas.length} están
+      ${motivosDeVeto(elegidas)}. Cada tarjeta lleva su motivo.`;
     box.appendChild(nota);
-    const b2 = document.getElementById('verVetadas2');
-    if (b2) b2.addEventListener('click', irAEspeciesConVetadas);
   }
 }
 
@@ -872,22 +855,6 @@ function motivosDeVeto(entradas) {
 }
 
 /**
- * Lleva a la pestaña de Especies y activa el interruptor de las vetadas.
- *
- * Va al final de la lista de factores del análisis, que es donde el usuario
- * puede ver el motivo sin tener que buscarlo.
- */
-function irAEspeciesConVetadas() {
-  const cb = document.getElementById('mostrarVetadas');
-  if (cb && !cb.checked) {
-    cb.checked = true;
-    if (typeof refreshMushroomSelector === 'function') refreshMushroomSelector();
-  }
-  const sec = document.querySelector('[data-section="setas"]');
-  if (sec) sec.click();
-}
-
-/**
  * Estado de la acumulación de calor, en palabras. Sólo se usa en la tabla de
  * Análisis, no en las tarjetas del dashboard: allí la cifra en grados-día
  * ("292 de 180") se quitó por pedido del usuario, porque un número grande sin
@@ -913,8 +880,15 @@ function tarjeta(r) {
 
   const m = MUSHROOM_META[sp.key] || {};
 
+  // Una especie vetada SÍ se pinta, con su 0 y su motivo. Antes se quitaba del
+  // panel y hacía falta un interruptor para verla, que el usuario ha quitado:
+  // si la ha dejado seleccionada, quiere verla, y taparla es peor que
+  // explicarla. El 0 con motivo es un dato del modelo, no un fallo.
+  const vetos = r.detalle.vetos;
+  const vetada = vetos.length > 0;
+
   return `
-  <div class="card mushroom-card ${r.viable ? '' : 'inviable'}">
+  <div class="card mushroom-card ${r.viable ? '' : 'inviable'}${vetada ? ' mushroom-card-vetada' : ''}">
     <div class="mushroom-title-section">
       <span class="mushroom-icon-large">${m.icon || '🍄'}</span>
       <div class="mushroom-titles">
@@ -923,6 +897,12 @@ function tarjeta(r) {
         ${sp.alias ? `<p class="mushroom-alias">${escaparHtml(sp.alias)}</p>` : ''}
       </div>
     </div>
+
+    ${vetada ? `<div class="veto-banner">
+        <strong>VETADA EN ESTE PUNTO</strong>
+        <span>${escaparHtml(motivoDeVeto(r))}. El índice es 0 y las barras de
+          factores no se muestran: el motivo ya está decidido.</span>
+      </div>` : ''}
 
     ${sp.toxica ? `<div class="toxic-banner">
         ☠️ <strong>ESPECIE TÓXICA — NO COMER.</strong>
@@ -937,24 +917,24 @@ function tarjeta(r) {
       </svg>
       <div class="ring-text">
         <span class="percentage">${Math.round(r.I)}</span>
-        <span class="label">Potencial</span>
+        <span class="label">${vetada ? 'Vetada' : 'Potencial'}</span>
       </div>
     </div>
 
     ${!r.viable ? `<div class="alert-box">⛔ ${mayus(r.motivo)}</div>` : ''}
 
-    <div class="prediction-banner ${nivel.clase}">
+    ${vetada ? '' : `<div class="prediction-banner ${nivel.clase}">
       <span class="prediction-icon">📊</span>
       <span class="prediction-text">${nivel.texto}</span>
-    </div>
+    </div>`}
 
-    <div class="factors-grid-compact">
+    ${vetada ? '' : `<div class="factors-grid-compact">
       ${[['S', r.S], ['H', r.H], ['A', r.A], ['T', r.T]].map(([k, v]) => `
         <div class="factor-item-compact">
           <span class="factor-label">${FACTOR_LABELS[k].icono} ${FACTOR_LABELS[k].nombre}</span>
           <span class="factor-value">${pct(v)}%</span>
         </div>`).join('')}
-    </div>
+    </div>`}
 
     <div class="conditions-list">
       <div class="condition-item">
@@ -1441,39 +1421,20 @@ function textoHelada(d) {
 }
 
 /**
- * El interruptor de «enseñar las que están vetadas».
+ * Init del selector de Especies.
  *
- * Está DESACTIVADO por defecto, y esa es la decisión: el veto esconde especies
- * del dashboard, y esconder sin poder mirar es tapar. Con el interruptor
- * encendido se ven todas, con su 0 y su motivo, que es información real.
- *
- * `mostrarVetadas` es global y no se guarda: al recargar se vuelve al estado
- * por defecto. Es lo que espera alguien que abre la página a mirar setas.
+ * NO hay interruptor de vetadas. Hubo uno, «Mostrar también las que no pueden
+ * fructificar aquí», y el usuario lo quitó: le sobraba un botón. Ahora una
+ * especie vetada se ve en la lista con su motivo y su casilla DESACTIVADA, y si
+ * ya estaba seleccionada —porque se eligió en un punto donde sí crecía— se sigue
+ * viendo en el dashboard, con su tarjeta de 0 y el motivo escrito.
  */
-let mostrarVetadas = false;
-
 function initMushroomSelector() {
   const sel = document.getElementById('mushroomSelector');
   const info = document.getElementById('mushroomInfoGrid');
   if (!sel) return;
 
   refreshMushroomSelector();
-
-  // El interruptor se pone FUERA del contenedor que se reescribe, y se
-  // reconstruye cada vez, porque `sel.innerHTML` lo borraría.
-  if (!document.getElementById('mostrarVetadas')) {
-    const barra = document.createElement('label');
-    barra.className = 'mostrar-vetadas';
-    barra.innerHTML = `
-      <input type="checkbox" id="mostrarVetadas" ${mostrarVetadas ? 'checked' : ''}>
-      <span>Mostrar también las que no pueden fructificar aquí</span>`;
-    sel.parentNode.insertBefore(barra, sel);
-    barra.querySelector('#mostrarVetadas')
-      .addEventListener('change', (e) => {
-        mostrarVetadas = e.target.checked;
-        refreshMushroomSelector();
-      });
-  }
 }
 
 /**
@@ -1489,30 +1450,35 @@ function refreshMushroomSelector() {
   const info = document.getElementById('mushroomInfoGrid');
   if (!sel) return;
 
-  // El veto de cada especie en el punto actual. Sin punto cargado no hay nada
-  // que vetar, y todas se ven.
-  const vetadas = new Set();
-  if (currentRanking) {
-    for (const r of currentRanking) {
-      if (r.detalle.vetos.length) vetadas.add(r.sp.key);
-    }
-  }
-
+  // El veto de cada especie NO se guarda aquí: se busca en `currentRanking`, que
+  // ya lo tiene en `detalle.vetos`. Sin punto cargado no hay nada que vetar, y
+  // `r` sale `undefined` y todas las casillas quedan activas.
   sel.innerHTML = porPrioridad(SPECIES.map(sp => ({ sp }))).map(({ sp }) => {
     const m = MUSHROOM_META[sp.key] || {};
     const on = selectedMushrooms.includes(sp.key);
-    const vetada = vetadas.has(sp.key);
     const r = currentRanking?.find(x => x.sp.key === sp.key);
+    const vetada = !!(r && r.detalle.vetos.length);
     const motivo = r ? motivoDeVeto(r) : '';
+
+    // Una especie vetada NO se puede activar aquí: no crece en este punto, así
+    // que marcarla sería meterla en el dashboard a sabiendas. La casilla va
+    // desactivada y el motivo debajo.
+    //
+    // Pero si YA estaba marcada —se eligió en otro punto donde sí crecía— la
+    // casilla se deja activa para poder desmarcarla, y su tarjeta en el
+    // dashboard llevará el motivo. Taparla sin más sería peor que explicarla.
+    const bloqueada = vetada && !on;
+
     return `
-      <label class="mushroom-option ${on ? 'selected' : ''}${sp.toxica ? ' toxica' : ''}${vetada && !mostrarVetadas ? ' vetada' : ''}">
-        <input type="checkbox" value="${sp.key}" ${on ? 'checked' : ''}>
+      <label class="mushroom-option ${on ? 'selected' : ''}${sp.toxica ? ' toxica' : ''}${bloqueada ? ' vetada' : ''}${vetada && on ? ' vetada-sel' : ''}">
+        <input type="checkbox" value="${sp.key}" ${on ? 'checked' : ''}${bloqueada ? ' disabled' : ''}>
         <span class="mushroom-option-icon">${m.icon || '🍄'}</span>
         <div class="mushroom-option-info">
           <div class="mushroom-option-name">${escaparHtml(sp.es)}</div>
           <div class="mushroom-option-scientific">${escaparHtml(sp.lat)}</div>
           ${sp.toxica ? '<div class="mushroom-option-tox">☠️ Tóxica</div>' : ''}
-          ${vetada ? `<div class="mushroom-option-veto">${escaparHtml(mayus(motivo))}</div>` : ''}
+          ${vetada ? `<div class="mushroom-option-veto">${bloqueada ? 'No disponible aquí' : 'Vetada'}
+            · ${escaparHtml(motivo)}</div>` : ''}
         </div>
       </label>`;
   }).join('');
