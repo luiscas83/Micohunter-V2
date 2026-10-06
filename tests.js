@@ -2995,33 +2995,71 @@ prueba('el veto se explica en Especies y en la tarjeta, sin interruptor', () => 
   assert.ok(/interruptor/.test(src),
     'se ha borrado el comentario que explica por qué no hay interruptor');
 
-  // La casilla desactivada es lo que sustituye al interruptor.
+  // La casilla de una vetada se ve DESMARCADA, aunque siga en la lista de
+  // seleccionadas. Motivo: las diecinueve vienen marcadas por defecto, así que
+  // mostrarla marcada sería fingir que el usuario la eligió.
   const fn = src.match(/function refreshMushroomSelector\(\)[\s\S]*?\n\}/);
   assert.ok(fn, 'no se encuentra refreshMushroomSelector()');
-  assert.ok(/bloqueada = vetada && !on/.test(fn[0]),
-    'una especie vetada que ya estaba elegida se está bloqueando: '
-    + 'entonces no se podría deseleccionar');
-  assert.ok(/bloqueada \? ' disabled'/.test(fn[0]),
-    'la casilla de una especie vetada y no elegida no se desactiva');
+  assert.ok(/const on = !vetada && selectedMushrooms\.includes\(sp\.key\)/.test(fn[0]),
+    'una especie vetada se sigue mostrando marcada: las 19 vienen por defecto '
+    + 'y así parecería elegida a propósito');
+  assert.ok(/const activaAqui = vetada && vetadasMarcadas\.has\(sp\.key\)/.test(fn[0]),
+    'no hay forma de distinguir una vetada marcada a mano de otra de la lista');
 
-  // Y la tarjeta del dashboard lleva el motivo.
+  // Y NO puede llevar `disabled`: si lo llevara no se podría marcar, y entonces
+  // la tarjeta con el aviso no existiría nunca. Ese es el error que se corrigió
+  // la primera vez: con `disabled` el aviso quedaba inalcanzable.
+  //
+  // Se comprueba sobre el CÓDIGO, no sobre el texto entero: el comentario de
+  // arriba tiene que poder nombrar `disabled`, y si no, el test obligaría a
+  // borrar la razón de la decisión. Ya pasó una vez con el interruptor, que
+  // también se nombra en un comentario.
+  const codigoSel = fn[0]
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/^[ \t]*\/\/.*$/gm, ' ');
+  assert.ok(!/disabled/.test(codigoSel),
+    'la casilla de una vetada lleva `disabled`: entonces no se puede activar y '
+    + 'su tarjeta con el aviso no saldría nunca');
+  assert.ok(!/bloqueada/.test(codigoSel),
+    'queda la regla anterior de bloquear la casilla');
+
+  // El conjunto de las marcadas a mano, y su filtro.
+  assert.ok(/let vetadasMarcadas = new Set\(\)/.test(src),
+    'no existe el conjunto de vetadas marcadas a mano');
+  const esVis = src.match(/function esVisible\(r\)[\s\S]*?\n\}/);
+  assert.ok(esVis, 'no se encuentra esVisible()');
+  assert.ok(/vetos\.length === 0 \|\| vetadasMarcadas\.has\(r\.sp\.key\)/.test(esVis[0]),
+    'esVisible() no deja pasar la vetada que el usuario ha marcado a mano');
+
+  // El manejador tiene que registrarlo, o marcar la casilla no cambiaría nada.
+  // El cuerpo del manejador ronda los 1200 caracteres, asi que el margen
+  // tiene que ser amplio; con 800 no llegaba al cierre y el test no encontraba
+  // nada.
+  const ch = src.match(/sel\.querySelectorAll\('input'\)[\s\S]{0,2000}?\}\)\);/);
+  assert.ok(ch, 'no se encuentra el manejador de las casillas');
+  assert.ok(/marcaVetada\(sp, cb\.checked\)/.test(ch[0]),
+    'marcar una vetada no la registra: la casilla se movería y no pasaría nada');
+
+  // Y la tarjeta lleva el aviso.
   const tarjeta = src.match(/function tarjeta\(r\)[\s\S]*?\n\}/);
   assert.ok(tarjeta, 'no se encuentra tarjeta()');
   assert.ok(/mushroom-card-vetada/.test(tarjeta[0]),
     'la tarjeta vetada no lleva su propia clase para poder atenuarla');
-  assert.ok(/veto-banner/.test(tarjeta[0]),
-    'la tarjeta de una especie vetada no lleva el cartel con el motivo');
+  assert.ok(/veto-nota/.test(tarjeta[0]),
+    'la tarjeta de una especie vetada no lleva el aviso con el motivo');
   assert.ok(/motivoDeVeto\(r\)/.test(tarjeta[0]),
-    'el cartel del veto no dice el motivo');
+    'el aviso del veto no dice el motivo');
+  assert.ok(!/veto-banner/.test(tarjeta[0]),
+    'sigue el cartel grande: el aviso tiene que ser una línea, no un bloque');
 
-  // El panel ya no filtra las vetadas: si las quita, no hay dónde ver el motivo.
+  // El panel usa el filtro, no la lista a pelo.
   const panel = src.match(/function renderTarjetas\(\)[\s\S]*?\n\}/);
   assert.ok(panel, 'no se encuentra renderTarjetas()');
-  assert.ok(!/elegidas\.filter\(r => !r\.detalle\.vetos\.length\)/.test(panel[0]),
-    'el dashboard vuelve a descartar las vetadas: '
-    + 'sin tarjeta no hay dónde leer el motivo');
+  assert.ok(/selectedMushrooms\.includes\(r\.sp\.key\) && esVisible\(r\)/.test(panel[0]),
+    'el dashboard no aplica esVisible(): las vetadas de la lista de por defecto '
+    + 'saldrían todas a la vez');
   assert.ok(/elegidas\.map\(r => tarjeta\(r\)\)/.test(panel[0]),
-    'el dashboard tiene que pintar todas las elegidas, vetadas incluidas');
+    'el dashboard tiene que pintar las elegidas que son visibles');
 });
 
 
@@ -3040,7 +3078,7 @@ grupo('26. El número de versión existe y está bien escrito');
 // número que mueve una predicción sube el primero. Aquí se comprueba que el
 // número está donde tiene que estar y que no se ha roto.
 
-const VERSION = 'v2.3';
+const VERSION = 'v2.4';
 
 prueba('el número de versión está debajo del lema, en la cabecera', () => {
   const html = require('fs').readFileSync('index.html', 'utf8');

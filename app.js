@@ -762,11 +762,12 @@ function renderTarjetas() {
   // puntuación: el orden en el que salen las tarjetas es fijo, para que no
   // se muevan de sitio cada vez que cambia el tiempo.
   //
-  // Y las vetadas NO se descartan. Se pintan con su 0 y su motivo. Antes sí se
-  // quitaban, y para verlas hacía falta un interruptor aparte; el usuario lo
-  // quitó porque le sobraba un botón más. Si alguien ha dejado una especie
-  // seleccionada, lo que quiere es verla, y taparla es peor que explicarla.
-  const elegidas = currentRanking.filter(r => selectedMushrooms.includes(r.sp.key));
+  // Una especie vetada NO sale por el hecho de estar en `selectedMushrooms`: las
+  // 19 vienen marcadas por defecto, así que si se respetara el veto de la lista
+  // nadie vería nunca un panel limpio. Sale solo si el usuario la ha marcado a
+  // mano, que es lo que guarda `vetadasMarcadas`.
+  const elegidas = currentRanking.filter(r =>
+    selectedMushrooms.includes(r.sp.key) && esVisible(r));
 
   if (!elegidas.length) {
     box.innerHTML = '<p class="placeholder-text">Selecciona setas en la pestaña 🍄 Especies</p>';
@@ -808,6 +809,30 @@ function renderTarjetas() {
  * El verbo concuerda con su propio número: «1 está fuera de su hábitat» y no
  * «1 están».
  */
+/**
+ * Las especies vetadas que el usuario ha marcado a mano.
+ *
+ * Existe por un motivo concreto: las diecinueve especies vienen marcadas en
+ * `selectedMushrooms` por defecto, así que «está seleccionada» no dice nada
+ * sobre si el usuario la quiso. Una vetada que solo está por el lista por
+ * defecto NO sale en el dashboard; si la marcas con el dedo, sí, con su aviso.
+ *
+ * No se guarda en `localStorage`: se borra al recargar y se vuelve al estado por
+ * defecto, que es lo que espera alguien que abre la página a mirar setas.
+ */
+let vetadasMarcadas = new Set();
+
+/** ¿Sale esta entrada en el dashboard? */
+function esVisible(r) {
+  return r.detalle.vetos.length === 0 || vetadasMarcadas.has(r.sp.key);
+}
+
+/** El usuario ha marcado (o desmarcado) una especie vetada. */
+function marcaVetada(sp, marcada) {
+  if (marcada) vetadasMarcadas.add(sp);
+  else vetadasMarcadas.delete(sp);
+}
+
 /**
  * Los motivos de veto de UNA especie, en texto y sin recuento.
  *
@@ -898,10 +923,10 @@ function tarjeta(r) {
       </div>
     </div>
 
-    ${vetada ? `<div class="veto-banner">
-        <strong>VETADA EN ESTE PUNTO</strong>
-        <span>${escaparHtml(motivoDeVeto(r))}. El índice es 0 y las barras de
-          factores no se muestran: el motivo ya está decidido.</span>
+    ${vetada ? `<div class="veto-nota">
+        <span class="veto-nota-icon">ⓘ</span>
+        <span>Vetada aquí: ${escaparHtml(motivoDeVeto(r))}. Las barras no se
+          muestran porque el motivo ya está decidido.</span>
       </div>` : ''}
 
     ${sp.toxica ? `<div class="toxic-banner">
@@ -1455,29 +1480,30 @@ function refreshMushroomSelector() {
   // `r` sale `undefined` y todas las casillas quedan activas.
   sel.innerHTML = porPrioridad(SPECIES.map(sp => ({ sp }))).map(({ sp }) => {
     const m = MUSHROOM_META[sp.key] || {};
-    const on = selectedMushrooms.includes(sp.key);
     const r = currentRanking?.find(x => x.sp.key === sp.key);
     const vetada = !!(r && r.detalle.vetos.length);
     const motivo = r ? motivoDeVeto(r) : '';
 
-    // Una especie vetada NO se puede activar aquí: no crece en este punto, así
-    // que marcarla sería meterla en el dashboard a sabiendas. La casilla va
-    // desactivada y el motivo debajo.
+    // Una especie vetada se ve DESMARCADA y en gris, aunque siga en
+    // `selectedMushrooms`: las diecinueve vienen marcadas por defecto, así que
+    // mostrarla marcada sería fingir que el usuario la eligió.
     //
-    // Pero si YA estaba marcada —se eligió en otro punto donde sí crecía— la
-    // casilla se deja activa para poder desmarcarla, y su tarjeta en el
-    // dashboard llevará el motivo. Taparla sin más sería peor que explicarla.
-    const bloqueada = vetada && !on;
+    // La casilla NO lleva `disabled`, a propósito: si lo llevara no se podría
+    // marcar, y entonces la tarjeta con el aviso no existiría nunca. Marcándola
+    // a mano, el usuario quiere verla aunque sea a cero, y sale en el
+    // dashboard con su aviso.
+    const on = !vetada && selectedMushrooms.includes(sp.key);
+    const activaAqui = vetada && vetadasMarcadas.has(sp.key);
 
     return `
-      <label class="mushroom-option ${on ? 'selected' : ''}${sp.toxica ? ' toxica' : ''}${bloqueada ? ' vetada' : ''}${vetada && on ? ' vetada-sel' : ''}">
-        <input type="checkbox" value="${sp.key}" ${on ? 'checked' : ''}${bloqueada ? ' disabled' : ''}>
+      <label class="mushroom-option ${on || activaAqui ? 'selected' : ''}${sp.toxica ? ' toxica' : ''}${vetada ? ' vetada' : ''}${activaAqui ? ' vetada-sel' : ''}">
+        <input type="checkbox" value="${sp.key}" ${on || activaAqui ? 'checked' : ''}>
         <span class="mushroom-option-icon">${m.icon || '🍄'}</span>
         <div class="mushroom-option-info">
           <div class="mushroom-option-name">${escaparHtml(sp.es)}</div>
           <div class="mushroom-option-scientific">${escaparHtml(sp.lat)}</div>
           ${sp.toxica ? '<div class="mushroom-option-tox">☠️ Tóxica</div>' : ''}
-          ${vetada ? `<div class="mushroom-option-veto">${bloqueada ? 'No disponible aquí' : 'Vetada'}
+          ${vetada ? `<div class="mushroom-option-veto">${activaAqui ? 'Vetada' : 'No disponible aquí'}
             · ${escaparHtml(motivo)}</div>` : ''}
         </div>
       </label>`;
@@ -1550,9 +1576,17 @@ function refreshMushroomSelector() {
     } else {
       selectedMushrooms = selectedMushrooms.filter(x => x !== k);
     }
+    // Una especie vetada que se marca o se desmarca queda registrada aparte.
+    // Sin esto, marcarla no cambiaría nada: `esVisible()` la seguiría ocultando
+    // porque el veto manda sobre `selectedMushrooms`.
+    const sp = SPECIES.find(x => x.key === k);
+    const r = currentRanking?.find(x => x.sp.key === k);
+    if (sp && r && r.detalle.vetos.length) marcaVetada(sp, cb.checked);
+
     cb.closest('.mushroom-option').classList.toggle('selected', cb.checked);
     saveSelectedMushrooms();
     renderEstado();
+    refreshMushroomSelector();
     renderTarjetas();
   }));
 }

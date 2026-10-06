@@ -2739,23 +2739,25 @@ body {
     opacity: 0.6;
 }
 
-.veto-banner {
-    margin: 12px 0;
-    padding: 10px 14px;
-    background: #e8e5de;
-    border-left: 4px solid #a9a49a;
-    border-radius: 6px;
-    font-size: 0.82rem;
-    color: #4a4740;
-    line-height: 1.45;
+/* Aviso pequeño: una línea, sin cartel. Un 0 necesita una explicación, no un
+   bloque de texto que empuje el resto de la tarjeta. */
+.veto-nota {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin: 10px 0 2px;
+    padding: 6px 10px;
+    background: #eeebe4;
+    border-radius: 5px;
+    font-size: 0.74rem;
+    line-height: 1.4;
+    color: #5f5b52;
 }
 
-.veto-banner strong {
-    display: block;
-    font-size: 0.68rem;
-    letter-spacing: 0.08em;
-    color: #6f6a5f;
-    margin-bottom: 3px;
+.veto-nota-icon {
+    flex: none;
+    font-size: 0.8rem;
+    opacity: 0.7;
 }
 
 /* La nota al pie del dashboard, cuando hay species descartadas. */
