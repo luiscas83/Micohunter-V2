@@ -137,16 +137,37 @@ prueba('potencialEstacional cae por encima del techo', () => {
   assert.ok(A.potencialEstacional(sp.tMax + 5, sp) < A.potencialEstacional(sp.tMax - 1, sp));
 });
 
-prueba('factorTemporada: 1.00 dentro, 0.45 a dos meses, 0.15 lejos', () => {
+prueba('factorTemporada: 1.00 dentro de la ventana, 0 fuera', () => {
   // Especie de mentira, con temporada fija. Antes usaba el boleto y sus meses
   // de verdad, así que al cambiar esos meses por los del libro el test empezó
   // a fallar sin que hubiera cambiado la función. Un test que depende de los
   // datos no mide la función, mide los datos.
+  //
+  // CAMBIO 2026-10-06: esto era un peso (1.00 dentro, 0.45 a dos meses, 0.15
+  // más lejos) y pasó a ser un veto a 0. Decidido por el usuario. Ver
+  // `factorTemporada` en algoritmo.js, donde está escrito por qué la ventana
+  // no se desplaza con la altitud.
   const sp = { temporada: [6, 7, 8, 9, 10, 11] };
   assert.strictEqual(A.factorTemporada(sp, 9), 1.0);
   assert.strictEqual(A.factorTemporada(sp, 7), 1.0, 'el mes 7 esta dentro');
-  assert.strictEqual(A.factorTemporada(sp, 4), 0.45);
-  assert.strictEqual(A.factorTemporada(sp, 3), 0.15);
+  assert.strictEqual(A.factorTemporada(sp, 4), 0, 'fuera de la ventana, veto');
+  assert.strictEqual(A.factorTemporada(sp, 3), 0, 'lejos tambien, sinrebaja');
+  assert.strictEqual(A.factorTemporada(sp, 12), 0, 'diciembre no esta en [6-11]');
+});
+
+prueba('factorTemporada con temporada vacia NO veta', () => {
+  // No saber la temporada es no saber, y no saber no puede anular nada. Es el
+  // mismo criterio que el veto de habitat con la cobertura sin cartografiar.
+  assert.strictEqual(A.factorTemporada({ temporada: [] }, 1), 1);
+  assert.strictEqual(A.factorTemporada({ temporada: [] }, 7), 1);
+  assert.strictEqual(A.factorTemporada({}, 1), 1);
+});
+
+prueba('factorTemporada con el mes sin saber NO veta', () => {
+  const sp = { temporada: [6, 7, 8, 9, 10, 11] };
+  assert.strictEqual(A.factorTemporada(sp, null), 1);
+  assert.strictEqual(A.factorTemporada(sp, undefined), 1);
+  assert.strictEqual(A.factorTemporada(sp, 0), 1, 'el mes 0 no existe: es ausencia');
 });
 
 prueba('factorTemporada da 1.00 en el mes medio de la temporada real del boleto', () => {
@@ -703,6 +724,11 @@ prueba('la helada ya NO pone el índice a cero ni marca no viable', () => {
       : sp.alcalinofila ? 7.6 : 6.8;
     c.terreno.ph = perfil;
     c.suelo = { ph: perfil, ok: true };
+    // Y en un mes de SU temporada. `ctx()` usa octubre, y desde que la
+    // temporada es veto la colmenilla (abril-mayo), el marzuelo (febrero-mayo),
+    // el perrechico (abril-junio) y el boleto reticulado (mayo-julio) caían a 0
+    // por estar fuera de fecha, que no es lo que este test mide.
+    c.mes = sp.temporada[0];
     const r = A.indice(sp, c);
     assert.strictEqual(r.viable, true, sp.key + ': viable=' + r.viable);
     assert.strictEqual(r.motivo, null, sp.key + ': motivo=' + r.motivo);
@@ -2456,11 +2482,12 @@ prueba('`confinado` ya no existe en el modelo', () => {
     'evaluarHabitat sigue leyendo `sp.confinado`; el veto no esta completo');
 });
 
-prueba('la temporada NO es un veto, a diferencia del habitat', () => {
-  // Se comprueba a proposito: es la confusion facil, porque las dos son
-  // correcciones que bajan el indice. La diferencia es que la temporada se
-  // deduce del mes, que siempre se sabe, mientras que el habitat puede no
-  // saberse.
+prueba('la temporada es un veto, y la diferencia con el habitat es el dato', () => {
+  // CAMBIO 2026-10-06: este test comprobaba que la temporada NO era un veto
+  // («fuera de temporada degrada, pero no veta»). Ahora sí lo es, por decision
+  // del usuario. Lo que sigue siendo verdad, y es lo que este test vigila, es
+  // la diferencia de fondo entre los dos: la temporada se deduce del mes, que
+  // siempre se sabe, mientras que el habitat puede no saberse.
   const A_ = require('./algoritmo.js');
   // OJO al orden de los argumentos: la firma es (sp, mes), no (mes, sp).
   // Pasados al reves, `sp.temporada` sale undefined y la funcion devuelve 1 en
@@ -2468,9 +2495,15 @@ prueba('la temporada NO es un veto, a diferencia del habitat', () => {
   const sp = A_.SPECIES[0];
   const dentro = A_.factorTemporada(sp, sp.temporada[0]);
   const lejos = A_.factorTemporada(sp, (sp.temporada[0] + 5) % 12 || 12);
-  assert.ok(dentro > lejos, 'dentro de temporada tiene que puntuar mas: '
-    + dentro + ' contra ' + lejos);
-  assert.ok(lejos > 0, 'fuera de temporada degrada, pero no veta');
+  assert.strictEqual(dentro, 1, 'dentro de temporada vale 1');
+  assert.strictEqual(lejos, 0, 'fuera de temporada veta a 0');
+
+  // Y la diferencia que sigue en pie: no saber la temporada NO veta. Es el
+  // mismo criterio del habitat, donde la cobertura sin cartografiar baja a
+  // 0,70 y no puede anular a nadie.
+  assert.strictEqual(A_.evaluarTemporada({ temporada: [] }, 3).veto, false,
+    'sin ventana declarada no puede haber veto');
+  assert.strictEqual(A_.evaluarTemporada({ temporada: [] }, 3).factor, 1);
 });
 
 /* ------------------------------------------------------------------ */
@@ -2894,8 +2927,11 @@ prueba('los dos vetos van en la misma lista, sin pisarse', () => {
   // poder decir las dos cosas, no sólo una.
   const A_ = require('./algoritmo.js');
   const alcali = A_.SPECIES.find((s) => s.alcalinofila);
-  // En pinar, que no es su hábitat, y con pH 5,0, que tampoco.
-  const c = ctx({ veg: ['pinar'], ph: 5.0 });
+  // En pinar, que no es su hábitat, y con pH 5,0, que tampoco. Y en un mes de
+  // SU temporada: `ctx()` pone octubre por defecto, y desde que la temporada
+  // veta ese mes metería un tercer motivo en la lista y este test, que mide
+  // los dos vetos de suelo y habitat, fallaría por el motivo equivocado.
+  const c = ctx({ veg: ['pinar'], ph: 5.0, mes: alcali.temporada[0] });
   const r = A_.indice(alcali, c);
   assert.deepStrictEqual(r.detalle.vetos.sort(), ['habitat', 'suelo'],
     'debería vetar por los dos motivos');
@@ -2947,7 +2983,7 @@ grupo('26. El número de versión existe y está bien escrito');
 // número que mueve una predicción sube el primero. Aquí se comprueba que el
 // número está donde tiene que estar y que no se ha roto.
 
-const VERSION = 'v1.1';
+const VERSION = 'v2.0';
 
 prueba('el número de versión está debajo del lema, en la cabecera', () => {
   const html = require('fs').readFileSync('index.html', 'utf8');
@@ -3004,6 +3040,139 @@ prueba('el número de versión aparece en el análisis, que es donde se comparte
   assert.ok(m, 'la clase .version tiene que existir en el CSS');
   assert.ok(!/display:\s*none/.test(m[1]),
     '.version está oculto: no se vería en el móvil');
+});
+
+grupo('27. La temporada veta: fuera de la ventana documentada, 0 y no sale');
+
+// El veto de temporada se aprobo el 2026-10-06 por decision del usuario.
+// Antes era un peso: 1.00 dentro de la ventana, 0.45 hasta dos meses fuera,
+// 0.15 mas lejos. Lo unico que se decidio fue el veto; la ventana de meses se
+// dejo como esta, sin desplazar con la altitud, y eso queda escrito en
+// `factorTemporada` porque produce un error conocido.
+
+prueba('fuera de la ventana documentada el indice es 0 y el veto lo dice', () => {
+  const boletus = A.SPECIES.find((s) => s.key === 'boletus');
+  // Su ventana documentada es de julio a octubre.
+  assert.deepStrictEqual(boletus.temporada, [7, 8, 9, 10]);
+
+  // En octubre, dentro: nada que objetar.
+  const dentro = A.indice(boletus, ctx({
+    mes: 10, veg: [boletus.habitat[0]],
+    alt: 1200, ph: boletus.acidofilo ? 5.2 : 6.8,
+  }));
+  assert.strictEqual(dentro.detalle.vetos.includes('temporada'), false,
+    'en octubre no puede vetar por temporada');
+  assert.ok(dentro.I > 0, 'en octubre tiene que puntuar, y puntua ' + dentro.I);
+
+  // En enero, fuera: veto, 0 y motivo.
+  const fuera = A.indice(boletus, ctx({
+    mes: 1, veg: [boletus.habitat[0]],
+    alt: 1200, ph: boletus.acidofilo ? 5.2 : 6.8,
+  }));
+  assert.strictEqual(fuera.detalle.temporadaVeto, true);
+  assert.strictEqual(fuera.detalle.temporadaEtiqueta, 'fuera de temporada');
+  assert.ok(fuera.detalle.vetos.includes('temporada'),
+    'tiene que ir en la lista de vetos: ' + JSON.stringify(fuera.detalle.vetos));
+  assert.strictEqual(fuera.I, 0, 'fuera de temporada el indice es 0');
+  // Y el 0 es un veto, no un fallo: la especie sigue siendo viable.
+  assert.strictEqual(fuera.viable, true,
+    'el veto no es «no se puede evaluar»: la ficha es completa');
+  assert.strictEqual(fuera.motivo, null);
+});
+
+prueba('el veto de temporada usa la ventana de CADA especie, no una comun', () => {
+  // Si se usara una ventana global, las especies que no coinciden con ella
+  // cairian por la fecha en un mes en el que si estan. Se comprueba especie por
+  // especie, en un mes de SU ventana, en SU habitat y con SU pH.
+  for (const sp of A.SPECIES) {
+    const perfil = sp.pHTolerante ? 5.6 : sp.acidofilo ? 5.2
+      : sp.alcalinofila ? 7.6 : 6.8;
+    for (const mes of sp.temporada) {
+      const r = A.indice(sp, ctx({
+        mes, veg: [sp.habitat[0]], alt: 1200, ph: perfil,
+      }));
+      assert.strictEqual(r.detalle.temporadaVeto, false,
+        sp.key + ' veta por temporada en el mes ' + mes
+        + ', que esta en su propia ventana ' + JSON.stringify(sp.temporada));
+    }
+    // Y un mes claramente fuera de su ventana, que se elige del complementario.
+    const fuera = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      .filter((m) => !sp.temporada.includes(m));
+    if (fuera.length) {
+      const r = A.indice(sp, ctx({
+        mes: fuera[0], veg: [sp.habitat[0]], alt: 1200, ph: perfil,
+      }));
+      assert.strictEqual(r.detalle.temporadaVeto, true,
+        sp.key + ' deberia vetar por temporada en el mes ' + fuera[0]);
+    }
+  }
+});
+
+prueba('la temporada no veta cuando no se sabe', () => {
+  // Criterio identico al del habitat sin cartografiar: no saber no es no
+  // encajar. Una ficha sin ventana declarada no puede anularse.
+  const sinVentana = { temporada: [] };
+  assert.strictEqual(A.evaluarTemporada(sinVentana, 1).veto, false);
+  assert.strictEqual(A.evaluarTemporada(sinVentana, 1).factor, 1);
+  // Y el mes ausente tampoco es una fecha fuera de temporada.
+  assert.strictEqual(A.evaluarTemporada({ temporada: [7, 8, 9] }, null).veto, false);
+  assert.strictEqual(A.evaluarTemporada({ temporada: [7, 8, 9] }, null).factor, 1);
+});
+
+prueba('el veto de temporada se suma a los otros dos sin pisarlos', () => {
+  // Una especie puede estar fuera de temporada Y fuera de habitat. La tarjeta
+  // tiene que poder decir las dos cosas.
+  const alcali = A.SPECIES.find((s) => s.alcalinofila);
+  const mesFuera = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    .filter((m) => !alcali.temporada.includes(m))[0];
+  // En pinar, que no es su habitat, con pH 5,0 que tampoco, y fuera de fecha.
+  const r = A.indice(alcali, ctx({ veg: ['pinar'], ph: 5.0, mes: mesFuera }));
+  assert.deepStrictEqual(r.detalle.vetos.slice().sort(),
+    ['habitat', 'suelo', 'temporada'],
+    'tiene que vetar por los tres motivos a la vez');
+});
+
+prueba('la app sabe pintar el motivo del veto de temporada', () => {
+  // El selector de Especies traduce cada motivo a texto. Sin esta linea, el
+  // veto nuevo caia en el `else` y se pintaba como «pH fuera de rango».
+  const app = require('fs').readFileSync('app.js', 'utf8');
+  const m = app.match(/\.map\(v => v === 'habitat'[\s\S]{0,220}?\.join/);
+  assert.ok(m, 'no se encuentra el mapa de motivos del veto en app.js');
+  assert.ok(/fuera de temporada/.test(m[0]),
+    'el veto «temporada» no tiene su propio texto: '
+    + 'caeria en el else y se pintaria como «pH fuera de rango»');
+  assert.ok(/pH fuera de rango/.test(m[0]), 'el veto de suelo ha perdido su texto');
+});
+
+prueba('las 19 ventanas de temporada estan completas y son meses de verdad', () => {
+  // Si alguna ficha se quedara sin ventana, `factorTemporada` devolveria 1
+  // siempre y esa especie no vetaria nunca: pasaria inadvertida.
+  for (const sp of A.SPECIES) {
+    assert.ok(Array.isArray(sp.temporada) && sp.temporada.length,
+      sp.key + ': sin ventana de temporada, no podria vetar');
+    for (const m of sp.temporada) {
+      assert.ok(Number.isInteger(m) && m >= 1 && m <= 12,
+        sp.key + ': mes fuera de 1..12: ' + m);
+    }
+    assert.ok(sp.temporadaTxt && sp.temporadaTxt.length > 3,
+      sp.key + ': la ventana tiene que decir de donde sale');
+  }
+});
+
+prueba('enero se queda sin ninguna especie, y es un hecho del modelo', () => {
+  // Se fija a proposito. Con el veto, la union de las 19 ventanas deja enero
+  // vacio, y febrero, marzo y diciembre con una o dos. Es el coste que se
+  // acepto, y este test lo vigila para que, si anade una especie con ventana
+  // de invierno, se note en el sitio donde importa y no por sorpresa.
+  const NOM = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+    'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const porMes = NOM.map((_, m) => A.SPECIES
+    .filter((sp) => sp.temporada.includes(m + 1)).length);
+  const enero = porMes[0];
+  assert.strictEqual(enero, 0,
+    'enero tiene ' + enero + ' especies en temporada. Antes eran 0. '
+    + 'Si ha cambiado, hay que actualizar el aviso de la Metodologia, que dice '
+    + 'que en enero no sale ninguna.');
 });
 
 cola.then(() => {

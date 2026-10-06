@@ -49,7 +49,7 @@
           lo que había antes de que existiera. Los siguientes los sube quien
           cambia algo, y en el mismo cambio.
         -->
-        <p class="version" id="versionBadge" title="Versión de la aplicación">v1.1</p>
+        <p class="version" id="versionBadge" title="Versión de la aplicación">v2.0</p>
       </div>
     </div>
   </div>
@@ -359,15 +359,29 @@
     <h4>📅 T · Temporada documentada</h4>
     <p>La ventana de meses en la que cada especie fructifica, tomada de las fichas
     micológicas. Es, junto con el hospedante, el dato más sólido de que se dispone
-    en micología, así que entra como <em>peso</em> y no como veto:</p>
+    en micología, y por eso sostiene un <em>veto</em>:</p>
     <ul class="method-list">
       <li>dentro de la ventana → 100 %</li>
-      <li>hasta 2 meses fuera → 45 %</li>
-      <li>más lejos → 15 %</li>
+      <li>fuera de la ventana → <strong>0 %</strong>, y la tarjeta lo dice con «fuera
+        de temporada». La especie no se calcula y no sale en el panel.</li>
     </ul>
-    <p>No es un corte duro porque en España la ventana se desplaza con la latitud
-    y la altitud: un corte estricto en el Pirineo borraría al hongo de verano de los
-    robledales de León, donde sí sale hasta febrero.</p>
+    <p>Antes era un peso y no un veto: 100 % dentro, 45 % hasta dos meses fuera y
+    15 % más lejos. El cambio a veto se decidió el 6 de octubre de 2026.</p>
+    <p>Hay una consecuencia que conviene conocer antes de usarla en enero: la unión
+    de las 19 ventanas deja <strong>enero sin ninguna especie</strong>, y febrero,
+    marzo y diciembre con una o dos. En esos meses el panel avisa de que no hay
+    ninguna en temporada, con su recuento, en lugar de quedarse en blanco. No es un
+    fallo de la aplicación: es lo que dicen las fichas.</p>
+    <p class="hint">Lo que <strong>no</strong> se ha corregido, y es un error
+    conocido, es que la ventana de meses es la misma a 100 m que a 2000 m. En
+    montaña las setas se retrasan, así que un corte estricto borra en el Pirineo la
+    colmenilla de abril, que allí es de mayo o junio, y la deja en el sur, donde sí
+    es de abril. Arreglarlo exigiría una regla de desplazamiento por altitud, y eso
+    sería inventar un número que no está en ninguna fuente. Se dejó anotado en vez
+    de inventado.</p>
+    <p>La ventana se usa tal cual la documenta el libro. Si una ficha no la declara,
+    no hay veto: no saber la temporada es no saber, y no saber no anula nada. Es el
+    mismo criterio que el del hábitat sin cartografiar.</p>
 
     <h4>🌲 F<sub>hábitat</sub> · Compatibilidad de hábitat</h4>
     <p>Es el factor que más ha cambiado de los ocho, y el que más pesa. Antes se
@@ -549,9 +563,10 @@
     datos: nadie ha medido cuánta producción pierde un boleto por una noche de −5 °C.
     Lo que sí es sólido es la forma: gradual, con memoria, distinta por especie y con
     recuperación.</p>
-    <p>La <em>temporada</em> no es un veto tampoco, por el mismo motivo: la ventana se
-    desplaza con la latitud y la altitud, y un corte estricto borraría al hongo de
-    verano de los robledales de León, donde sí sale hasta febrero.</p>
+    <p>La <em>temporada</em> sí es un veto, desde el 6 de octubre de 2026: fuera de la
+    ventana documentada el índice es 0 y la especie no sale en el panel. Antes era un
+    peso. El coste está escrito en su propio apartado, «T · Temporada documentada»:
+    la unión de las 19 ventanas deja enero sin ninguna especie.</p>
 
     <h4>⛰️ F<sub>altitud</sub> · Factor altitudinal</h4>
     <p>Cada especie tiene su propia banda altitudinal, en metros, con la misma forma de
@@ -1101,16 +1116,25 @@
 
     <h4>4.8 · Las ventanas de temporada</h4>
     <p>Los meses de fructificación de cada especie salen de las fichas micológicas, y es,
-    junto con el hospedante, el dato más firme de que se dispone en micología. Por eso
-    entra como peso y no como veto:</p>
+    junto con el hospedante, el dato más firme de que se dispone en micología. Desde el
+    6 de octubre de 2026 <strong>entra como veto</strong>: fuera de la ventana el índice
+    es 0 y la especie no se calcula.</p>
     <ul class="method-list">
       <li>dentro de la ventana → <strong>100 %</strong></li>
-      <li>hasta dos meses de distancia → <strong>45 %</strong></li>
-      <li>más lejos → <strong>15 %</strong></li>
+      <li>fuera de la ventana → <strong>0 %</strong>, con el motivo «fuera de
+        temporada»</li>
     </ul>
-    <p>La distancia se mide en el círculo del calendario, no en línea recta: enero está a
-    dos meses de diciembre, y por eso el boleto, cuya ventana acaba en noviembre, no cae
-    del todo en el 15 % en enero.</p>
+    <p>Antes era un peso: 100 % dentro, 45 % hasta dos meses de distancia y 15 % más
+    lejos, con la distancia medida en el círculo del calendario. Ese caso ya no existe:
+    con veto no hay distancia intermedia, o el mes está en la ventana o no lo está.</p>
+    <p class="hint">Lo que se aceptó al pasarlo a veto, y conviene tener presente al usar
+    la aplicación en invierno: la unión de las 19 ventanas deja <strong>enero sin ninguna
+    especie</strong>, febrero con una, marzo con una y diciembre con dos. En esos meses
+    el panel dice cuántas hay y por qué, en vez de quedarse vacío a secas. Y la ventana
+    no se desplaza con la altitud, que es su error conocido: en el Pirineo la
+    colmenilla es de mayo o junio y el veto de abril la borra allí, mientras en el sur
+    sí es de abril. Corregirlo haría falta una regla de desplazamiento por altitud, y
+    eso sería un número inventado, así que queda anotado y no inventado.</p>
 
     <h4>4.9 · El resumen de qué está medido</h4>
     <div class="level-table">
@@ -1168,6 +1192,10 @@
     <p>La columna de la derecha es la que explica el modelo: cada nota multiplica
     la que había. La nota S bajó el 100 a 93, la de lluvia lo bajó a 81, y las
     otras cinco no tocaron nada porque estaban perfectas.</p>
+    <p class="hint">Ese mismo punto, ese mismo día, pero en enero: la nota T pasa a
+    <strong>0</strong> y el índice entero cae a 0. Fuera de la ventana documentada la
+    especie no se calcula y no sale en el panel. Es un veto, y su etiqueta es «fuera de
+    temporada».</p>
 
     <h4>Por qué se multiplica y no se suma</h4>
     <p>El mismo día, con la misma meteorología y en el mismo metro cuadrado de
@@ -1266,6 +1294,20 @@
         distinto del que hay bajo tus pies.</li>
       <li>Sin observaciones propias el índice no está validado. Úsalo como
         orientación, nunca como garantía.</li>
+      <li><strong>El veto de temporada deja meses casi vacíos.</strong> Desde el 6 de
+        octubre de 2026, fuera de la ventana documentada el índice es 0 y la especie no
+        sale en el panel. La unión de las 19 ventanas deja <strong>enero sin ninguna
+        especie</strong>, febrero y marzo con una, y diciembre con dos. En esos meses
+        el panel dice cuántas hay y por qué, en lugar de quedarse en blanco, pero es un
+        dato que hay que tener en cuenta antes de mirar el panel en invierno.</li>
+      <li><strong>La ventana de temporada no se desplaza con la altitud.</strong> Es el
+        error conocido del veto: en montaña las setas se retrasan, así que la colmenilla
+        —abril-mayo según el libro— se borra en el Pirineo, donde es de mayo o junio, y
+        se queda en el sur, donde sí es de abril. Arreglarlo exigiría una regla de
+        desplazamiento por altitud, que sería un número inventado; queda anotado en vez
+        de inventado. En la misma línea, la ventana es la del estado silvestre: la seta
+        de cardo, que es la única ficha con dos ventanas, no aparece de junio a agosto
+        aunque se venda cultivada todo el año.</li>
       <li>De las 19 bandas altitudinales, <strong>10 están estimadas</strong>
         por deducción del hábitat, no por una fuente con el rango en metros. La
         tarjeta las marca con «(estimada)». Las otras 10 sí tienen fuente, pero
@@ -1449,7 +1491,7 @@
         <dd>Traducción del índice en cuatro tramos: 70-100, 45-69, 22-44 y 0-21.</dd>
       </dl>
 
-      <h4>Las cuatro barras de factores</h4>
+      <h4>Las barras de factores</h4>
       <dl class="glossary">
         <dt>🌡️ Estacional (S)</dt>
         <dd>Si la temperatura del suelo está en el rango que necesita la especie,
@@ -1468,9 +1510,36 @@
           tenido tiempo de acumular calor suficiente.</dd>
 
         <dt>📅 Temporada (T)</dt>
-        <dd>Si el mes actual cae dentro de la temporada documentada de la especie.
-          100 % dentro, 45 % hasta dos meses fuera, 15 % más lejos.</dd>
+        <dd>Si el mes actual cae dentro de la temporada documentada de la especie:
+          100 % dentro, <strong>0 % fuera</strong>. Fuera de la ventana la especie no se
+          calcula y no sale en el panel; la puedes ver en la pestaña Especies con su
+          motivo, «fuera de temporada».</dd>
       </dl>
+
+      <h4>Cuando una seta no sale en el panel</h4>
+      <p>Tres motivos pueden dejar una especie fuera del panel, y cada uno tiene su
+      etiqueta. En los tres casos el índice es 0 y la especie <strong>no se borra del
+      modelo</strong>: sigue en la tabla de Análisis y en la pestaña Especies, donde
+      hay un interruptor para verlas todas con su motivo.</p>
+      <dl class="glossary">
+        <dt>Fuera de su hábitat</dt>
+        <dd>El Mapa Forestal de España ha cartografiado en ese punto algo que no es
+          hábitat de esta especie. Si no hay dato de cobertura no hay veto: sale
+          «sin datos de cobertura» y la especie sigue puntuando.</dd>
+
+        <dt>PH fuera de rango</dt>
+        <dd>El pH del punto queda fuera del perfil de la especie. Si SoilGrids falla y
+          el pH no se sabe, tampoco hay veto.</dd>
+
+        <dt>Fuera de temporada</dt>
+        <dd>El mes actual no está en la ventana documentada de la especie. Es el motivo
+          que más se repite: con la unión de las 19 ventanas, en enero las diecinueve
+          están fuera de temporada.</dd>
+      </dl>
+      <p class="hint">Cuando no sale ninguna de las seleccionadas, el panel no se queda
+      en blanco: dice cuántas hay y qué motivo tiene cada grupo. Una especie puede
+      vetar por dos motivos a la vez, así que la suma de los recuentos puede pasar del
+      número de especies.</p>
 
       <h4>Las filas de cada tarjeta</h4>
       <dl class="glossary">

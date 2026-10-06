@@ -1325,35 +1325,59 @@ function altitudEtiqueta(sp) {
 // ------------------------------------------------------------
 
 /**
- * Ventana de temporada documentada.
+ * Ventana de temporada documentada. Ahora es un VETO, no un peso.
  *
  * La temporada de fructificación es, junto con el hospedante, el dato más
  * sólido que hay en micología: está en las fichas de cada especie y coincide
- * entre fuentes. El resto de parámetros numéricos no lo están.
+ * entre fuentes. El resto de parámetros numéricos no lo están. Por eso puede
+ * sostener un 0: no es una suposición, es la ventana que documenta Laux.
  *
- * Por eso esto NO es un veto sino un peso: si la fecha cae fuera de ventana, la
- * temperatura del suelo de esa fecha ya iría por la vía de S y A. Encima, en
- * España la ventana se desplaza con la latitud y la altitud, así que un 0
- * duro produciría falsos negativos en el norte.
+ * ANTES era un peso (1.00 dentro, 0.45 hasta dos meses, 0.15 más lejos) y el
+ * motivo estaba escrito en el mismo sitio: «en España la ventana se desplaza
+ * con la latitud y la altitud, así que un 0 duro produciría falsos negativos en
+ * el norte». Ese motivo sigue siendo cierto y NO se ha resuelto: la ventana de
+ * meses es la misma a 100 m que a 2000 m, y en montaña las setas se retrasan,
+ * así que en Pirineos la colmenilla (abril-mayo en Laux) sale en mayo-junio. Con
+ * veto, la colmenilla se borra en abril en el norte y se queda en el sur. Es un
+ * error conocido y documentado, no un descuido: para arreglarlo haría falta una
+ * regla de desplazamiento por altitud, y eso sería inventar un número. Decidido
+ * por el usuario el 2026-10-06: no tocar la ventana.
+ *
+ * Lo que sí se acepta, y hay que decirlo porque es el coste del veto: la unión
+ * de las 19 ventanas deja ENERO sin ninguna especie, y febrero, marzo y
+ * diciembre con una o dos. En esos meses la aplicación avisa de que no hay
+ * ninguna en temporada en vez de enseñar una lista vacía sin explicación.
  *
  *   dentro de la ventana   1.00
- *   hasta 2 meses fuera   0.45
- *   más lejos             0.15
+ *   fuera de la ventana    0.00  veto
+ *
+ * Sin ventana declarada (`temporada` vacía) NO hay veto: no saber la temporada
+ * es no saber, y no saber no puede anular nada. Es el mismo criterio que el
+ * del veto de hábitat con la cobertura sin cartografiar.
  */
 function factorTemporada(sp, mes) {
   const t = sp.temporada;
   if (!t || !t.length || !mes) return 1;
+  return t.includes(mes) ? 1 : 0;
+}
 
-  // Distancia circular al mes más cercano de la ventana.
-  const distancias = t.map(m => {
-    const d = Math.abs(m - mes);
-    return Math.min(d, 12 - d);
-  });
-  const min = Math.min(...distancias);
-
-  if (min === 0) return 1;
-  if (min <= 2) return 0.45;
-  return 0.15;
+/**
+ * El veto de temporada con su etiqueta, para el detalle y para la tarjeta.
+ * Mismo formato que `evaluarHabitat` y `factorSuelo`.
+ */
+function evaluarTemporada(sp, mes) {
+  const t = sp.temporada;
+  if (!t || !t.length || !mes) {
+    return { factor: 1, etiqueta: '', veto: false };
+  }
+  if (t.includes(mes)) {
+    return { factor: 1, etiqueta: 'en temporada', veto: false };
+  }
+  return {
+    factor: 0,
+    etiqueta: 'fuera de temporada',
+    veto: true,
+  };
 }
 
 /**
@@ -1864,8 +1888,9 @@ function indice(sp, ctx) {
   // 5. Altitud, con la banda de esta especie
   const alt = altitudeFactor(ctx.altitude, sp);
 
-  // 6. Temporada documentada (peso, no veto)
-  const T = factorTemporada(sp, ctx.mes);
+  // 6. Temporada documentada. Veto a 0 fuera de la ventana de Laux.
+  const temp = evaluarTemporada(sp, ctx.mes);
+  const T = temp.factor;
 
   // 7. Estrés por helada, con memoria. Multiplicador: reduce el potencial y
   // el potencial vuelve conforme el episodio se aleja.
@@ -1892,11 +1917,18 @@ function indice(sp, ctx) {
       sueloConocido: sueloF.conocido,
       sueloVeto: sueloF.veto,
       sueloRango: sueloF.rango || null,
-      // Los dos vetos, juntos. La tarjeta los lee para saber si tiene que
+      // Los tres vetos, juntos. La tarjeta los lee para saber si tiene que
       // pintar un 0 con motivo o un 0 sin explicación.
-      //   habitat  el MFE cartografió algo que no es de esta especie
-      //   suelo    el pH del punto está fuera del rango del perfil
-      vetos: [hab.veto ? 'habitat' : null, sueloF.veto ? 'suelo' : null].filter(Boolean),
+      //   habitat    el MFE cartografió algo que no es de esta especie
+      //   suelo      el pH del punto está fuera del rango del perfil
+      //   temporada  la fecha cae fuera de la ventana documentada por Laux
+      vetos: [
+        hab.veto ? 'habitat' : null,
+        sueloF.veto ? 'suelo' : null,
+        temp.veto ? 'temporada' : null,
+      ].filter(Boolean),
+      temporadaEtiqueta: temp.etiqueta,
+      temporadaVeto: temp.veto,
       gddTope: g.tope,
       gddTopeAlcanzable: g.topeAlcanzable,
       gddDiasDisponibles: g.diasDisponibles,
@@ -2307,7 +2339,7 @@ if (typeof module !== 'undefined' && module.exports) {
     SPECIES, LAUX, CRUCE, FUENTES_NUMERAS, fuenteLaux, fuenteCruce,
     fuentesBreves, indice, ranking, porPrioridad, potencialEstacional,
     calcularGDD, factorAcondicionamiento, lluviaEfectiva, evaluarHabitat,
-    factorSuelo, factorTemporada, altitudeFactor, altitudeFactorGlobal,
+    factorSuelo, factorTemporada, evaluarTemporada, altitudeFactor, altitudeFactorGlobal,
     altitudEtiqueta, frostStress,
     FACTOR_LABELS, EVIDENCIA_LABELS, GUILD_LABELS, nivelTexto,
     // `meteo` se exporta para poder comprobarla con un `fetch` simulado en

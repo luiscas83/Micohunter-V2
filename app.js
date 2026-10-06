@@ -779,10 +779,9 @@ function renderTarjetas() {
   }
 
   if (!vis.length) {
-    const vetadas = elegidas.length;
-    box.innerHTML = `<p class="placeholder-text">Ninguna de las ${vetadas} setas seleccionadas
-      puede fructificar aquí: están fuera de su hábitat o su suelo está fuera
-      de rango. <button class="link-button" id="verVetadas">Ver por qué</button></p>`;
+    box.innerHTML = `<p class="placeholder-text">Ninguna de las ${elegidas.length} setas
+      seleccionadas puede fructificar aquí: ${motivosDeVeto(elegidas)}.
+      <button class="link-button" id="verVetadas">Ver por qué</button></p>`;
     const b = document.getElementById('verVetadas');
     if (b) b.addEventListener('click', irAEspeciesConVetadas);
     return;
@@ -796,13 +795,59 @@ function renderTarjetas() {
   if (fuera > 0) {
     const nota = document.createElement('p');
     nota.className = 'placeholder-text tarjetas-nota';
-    nota.innerHTML = `+ ${fuera} de las ${elegidas.length} seleccionadas están
-      fuera de su hábitat o de su rango de pH, y no se calculan.
+    // OJO: aquí no va un «están» delante, porque `motivosDeVeto` ya lleva el
+    // verbo de acuerdo en cada cláusula («4 están fuera de temporada»). Con las
+    // dos cosas se leía «están 4 están».
+    nota.innerHTML = `+ ${fuera} de las ${elegidas.length} seleccionadas
+      ${motivosDeVeto(elegidas)}, y no se calculan.
       <button class="link-button" id="verVetadas2">Verlas</button>`;
     box.appendChild(nota);
     const b2 = document.getElementById('verVetadas2');
     if (b2) b2.addEventListener('click', irAEspeciesConVetadas);
   }
+}
+
+/**
+ * Los motivos de veto que hay de verdad entre las entradas dadas, en texto.
+ *
+ * Se cuentan en vez de escribir «fuera de su hábitat o su suelo fuera de
+ * rango» a pelo, porque desde que la temporada veta ese texto miente: en
+ * enero las 19 especies están fuera de temporada y ninguna lo está por el
+ * hábitat. Un 0 sin el motivo real parece un fallo de la aplicación.
+ *
+ * Una especie puede vetar por dos o tres motivos a la vez, así que la suma de
+ * los recuentos pasa con mucho del total. Para que eso no se lea como una
+ * contradicción, el primer motivo va en claro y los siguientes llevan
+ * «además»: «14 están fuera de su hábitat, 5 tienen además el pH fuera de
+ * rango y 4 están además fuera de temporada». Así se entiende que 5 es un
+ * subconjunto de las 14.
+ *
+ * El verbo concuerda con su propio número: «1 está fuera de su hábitat» y no
+ * «1 están».
+ */
+function motivosDeVeto(entradas) {
+  const cuenta = { habitat: 0, suelo: 0, temporada: 0 };
+  for (const r of entradas) {
+    for (const v of r.detalle.vetos) {
+      if (v in cuenta) cuenta[v]++;
+    }
+  }
+
+  const estar = (n) => (n === 1 ? 'está' : 'están');
+  // Del segundo motivo en adelante se dice «además», para que se lea que son
+  // subconjuntos del primero y no partes disjuntas. Sin eso, «14 fuera de su
+  // hábitat, 5 con el pH fuera y 4 fuera de temporada» parece que son 23
+  // especies cuando en el ejemplo eran 15.
+  const partes = [
+    cuenta.habitat ? `${cuenta.habitat} ${estar(cuenta.habitat)} fuera de su hábitat` : null,
+    cuenta.suelo ? `${cuenta.suelo} ${cuenta.suelo === 1 ? 'tiene' : 'tienen'} ${cuenta.habitat ? 'además ' : ''}el pH fuera de rango` : null,
+    cuenta.temporada ? `${cuenta.temporada} ${estar(cuenta.temporada)} ${cuenta.habitat || cuenta.suelo ? 'además ' : ''}fuera de temporada` : null,
+  ].filter(Boolean);
+
+  if (!partes.length) return 'el modelo no las puede calcular aquí';
+  if (partes.length === 1) return partes[0];
+
+  return partes.slice(0, -1).join(', ') + ' y ' + partes[partes.length - 1];
 }
 
 /**
@@ -1429,7 +1474,9 @@ function refreshMushroomSelector() {
     const vetada = vetadas.has(sp.key);
     const r = currentRanking?.find(x => x.sp.key === sp.key);
     const motivo = r ? r.detalle.vetos
-      .map(v => v === 'habitat' ? 'fuera de su hábitat' : 'pH fuera de rango')
+      .map(v => v === 'habitat' ? 'fuera de su hábitat'
+        : v === 'suelo' ? 'pH fuera de rango'
+        : 'fuera de temporada')
       .join(' y ') : '';
     return `
       <label class="mushroom-option ${on ? 'selected' : ''}${sp.toxica ? ' toxica' : ''}${vetada && !mostrarVetadas ? ' vetada' : ''}">
